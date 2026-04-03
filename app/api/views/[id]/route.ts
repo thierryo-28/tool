@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { SavedViewRecord } from '@/lib/savedViews';
 import { getSupabaseAdminClient } from '@/lib/server/supabaseAdmin';
 import {
+  getCurrentUserPrimaryEmail,
   getOrCreateProfileId,
   getWorkspaceRole,
   requireClerkUserId
@@ -30,7 +31,8 @@ function toSavedViewRecord(row: PlannerViewRow): SavedViewRecord {
 
 async function getAuthorizedView(id: string) {
   const clerkUserId = await requireClerkUserId();
-  const profileId = await getOrCreateProfileId(clerkUserId);
+  const email = await getCurrentUserPrimaryEmail();
+  const profileId = await getOrCreateProfileId(clerkUserId, email);
   const supabase = getSupabaseAdminClient();
 
   const { data: row, error: rowErr } = await supabase

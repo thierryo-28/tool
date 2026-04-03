@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { useAuth } from '@clerk/nextjs';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   compressToEncodedURIComponent,
@@ -39,6 +40,7 @@ import { CurrencyInput } from './components/CurrencyInput';
 import { PipelineSettingsForm } from './components/PipelineSettingsForm';
 import { PipelineResults } from './components/PipelineResults';
 import { SavedViewsToolbar } from './components/SavedViewsToolbar';
+import { WorkspaceAdminPanel } from './components/WorkspaceAdminPanel';
 import {
   mergePlannerGlobals,
   plannerGlobalsFromSettings,
@@ -159,9 +161,18 @@ function defaultSdrWaves(): SdrHiringWave[] {
   return [{ count: 2, startDate: feb }];
 }
 
+type WorkspaceAccessRole = 'admin' | 'user' | 'viewer' | null | 'loading';
+
 export default function PlannerClientPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { isLoaded, userId } = useAuth();
+
+  const defaultWorkspaceId = (
+    process.env.NEXT_PUBLIC_DEFAULT_WORKSPACE_ID ?? ''
+  ).trim();
+  const [workspaceAccessRole, setWorkspaceAccessRole] =
+    useState<WorkspaceAccessRole>('loading');
 
   const [settings, setSettings] = useState<GlobalSettings>(defaultGlobalSettings);
   const [roles, setRoles] = useState<RoleAssumption[]>(defaultRoles);
@@ -175,7 +186,7 @@ export default function PlannerClientPage() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [hydratedFromUrl, setHydratedFromUrl] = useState(false);
 
-  type TabId = 'home' | 'capacity' | 'sdr' | 'demand' | 'pipeline';
+  type TabId = 'home' | 'capacity' | 'sdr' | 'demand' | 'pipeline' | 'admin';
   const [activeTab, setActiveTab] = useState<TabId>('home');
 
   const [demandSettings, setDemandSettings] = useState<DemandSettings>(
@@ -191,6 +202,60 @@ export default function PlannerClientPage() {
   const [sdrWaves, setSdrWaves] = useState<SdrHiringWave[]>(defaultSdrWaves);
   const [sdrBaseline, setSdrBaseline] = useState(4);
   const [sdrShowResults, setSdrShowResults] = useState(false);
+
+  const isWorkspaceAdmin = workspaceAccessRole === 'admin';
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (!defaultWorkspaceId) {
+      setWorkspaceAccessRole(null);
+      return;
+    }
+    if (!userId) {
+      setWorkspaceAccessRole(null);
+      return;
+    }
+
+    // Clear any role from a previous Clerk user so we never show Admin until
+    // this session's role is loaded (avoids stale "admin" after account switch).
+    setWorkspaceAccessRole('loading');
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/workspaces/${encodeURIComponent(defaultWorkspaceId)}/access`,
+          { credentials: 'include', cache: 'no-store' }
+        );
+        if (cancelled) return;
+        if (!res.ok) {
+          setWorkspaceAccessRole(null);
+          return;
+        }
+        const data = (await res.json()) as { role?: unknown };
+        if (cancelled) return;
+        const r = data.role;
+        if (r === 'admin' || r === 'user' || r === 'viewer') {
+          setWorkspaceAccessRole(r);
+        } else {
+          setWorkspaceAccessRole(null);
+        }
+      } catch {
+        if (!cancelled) setWorkspaceAccessRole(null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoaded, userId, defaultWorkspaceId]);
+
+  useEffect(() => {
+    if (workspaceAccessRole === 'loading') return;
+    if (activeTab === 'admin' && workspaceAccessRole !== 'admin') {
+      setActiveTab('home');
+    }
+  }, [activeTab, workspaceAccessRole]);
 
   const activeRoles = useMemo(
     () => roles.filter((r) => selectedRoles[r.id]),
@@ -459,6 +524,15 @@ export default function PlannerClientPage() {
         >
           Pipeline Planner
         </button>
+        {isWorkspaceAdmin ? (
+          <button
+            type="button"
+            className={activeTab === 'admin' ? 'tab active' : 'tab'}
+            onClick={() => setActiveTab('admin')}
+          >
+            Admin
+          </button>
+        ) : null}
       </div>
 
       {activeTab === 'capacity' ? (
@@ -721,6 +795,19 @@ export default function PlannerClientPage() {
               variant="sql"
             />
           </section>
+        </div>
+      ) : activeTab === 'admin' && isWorkspaceAdmin ? (
+        <div className="grid" style={{ gridTemplateColumns: 'minmax(0, 1fr)' }}>
+          <div className="subtitle">
+            <h2 style={{ margin: '0 0 12px', fontSize: '1.25rem' }}>
+              Workspace admin
+            </h2>
+            <div>
+              Manage who can access shared views and assign `admin`, `user`, or
+              `viewer` roles.
+            </div>
+          </div>
+          <WorkspaceAdminPanel />
         </div>
       ) : activeTab === 'capacity' ? (
         <div className="grid">

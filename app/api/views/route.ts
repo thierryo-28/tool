@@ -3,6 +3,7 @@ import type { SavedViewRecord } from '@/lib/savedViews';
 import { getSupabaseAdminClient } from '@/lib/server/supabaseAdmin';
 import {
   canEditByRole,
+  getCurrentUserPrimaryEmail,
   getOrCreateProfileId,
   getWorkspaceRole,
   requireClerkUserId
@@ -50,7 +51,8 @@ export async function GET(req: NextRequest) {
     }
 
     const clerkUserId = await requireClerkUserId();
-    const profileId = await getOrCreateProfileId(clerkUserId);
+    const email = await getCurrentUserPrimaryEmail();
+    const profileId = await getOrCreateProfileId(clerkUserId, email);
     const role = await getWorkspaceRole(workspaceId, profileId);
     if (!role) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -106,7 +108,8 @@ export async function POST(req: NextRequest) {
     }
 
     const clerkUserId = await requireClerkUserId();
-    const profileId = await getOrCreateProfileId(clerkUserId);
+    const email = await getCurrentUserPrimaryEmail();
+    const profileId = await getOrCreateProfileId(clerkUserId, email);
     const role = await getWorkspaceRole(parsed.data.workspaceId, profileId);
     if (!role || !canEditByRole(role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

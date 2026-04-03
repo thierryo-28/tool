@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/server/supabaseAdmin';
 import {
+  getCurrentUserPrimaryEmail,
   getOrCreateProfileId,
   getWorkspaceRole,
   requireClerkUserId
@@ -27,7 +28,8 @@ export async function POST(
     }
 
     const clerkUserId = await requireClerkUserId();
-    const profileId = await getOrCreateProfileId(clerkUserId);
+    const email = await getCurrentUserPrimaryEmail();
+    const profileId = await getOrCreateProfileId(clerkUserId, email);
     const supabase = getSupabaseAdminClient();
 
     const { data: row, error: rowErr } = await supabase

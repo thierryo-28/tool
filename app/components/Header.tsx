@@ -1,5 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
+import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs';
 
 interface Props {
   rightText?: string;
@@ -34,6 +35,19 @@ export const Header: React.FC<Props> = ({
         <div className="app-header-kicker">Planner</div>
         <div className="app-header-title">{rightText ?? 'Sales Capacity'}</div>
         <div className="app-header-actions no-print">
+          <SignedOut>
+            <SignInButton mode="modal">
+              <button
+                type="button"
+                className="button button-secondary button-small"
+              >
+                Sign in
+              </button>
+            </SignInButton>
+          </SignedOut>
+          <SignedIn>
+            <UserButton />
+          </SignedIn>
           <button
             type="button"
             className="button button-secondary button-small"

@@ -74,3 +74,22 @@ create table if not exists planner_view_shares (
 
 create index if not exists planner_view_shares_profile_idx
   on planner_view_shares (profile_id, view_id);
+
+create table if not exists workspace_invites (
+  id uuid primary key default gen_random_uuid(),
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  email text not null,
+  role app_role not null,
+  clerk_invitation_id text,
+  invited_by_profile_id uuid references profiles(id) on delete set null,
+  status text not null default 'pending',
+  created_at timestamptz not null default now(),
+  accepted_at timestamptz
+);
+
+create index if not exists workspace_invites_workspace_status_idx
+  on workspace_invites (workspace_id, status, created_at desc);
+
+create unique index if not exists workspace_invites_pending_unique
+  on workspace_invites (workspace_id, lower(email))
+  where status = 'pending';
