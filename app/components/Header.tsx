@@ -6,8 +6,7 @@ import {
   SignedIn,
   SignedOut,
   SignInButton,
-  UserButton,
-  useUser
+  UserButton
 } from '@clerk/nextjs';
 
 interface Props {
@@ -18,25 +17,6 @@ interface Props {
   linkCopied?: boolean;
 }
 
-function displayFirstName(
-  user:
-    | {
-        firstName?: string | null;
-        fullName?: string | null;
-        primaryEmailAddress?: { emailAddress: string } | null;
-      }
-    | null
-    | undefined
-): string {
-  if (!user) return '';
-  if (user.firstName?.trim()) return user.firstName.trim();
-  const fromFull = user.fullName?.trim().split(/\s+/)[0];
-  if (fromFull) return fromFull;
-  const email = user.primaryEmailAddress?.emailAddress;
-  if (email) return email.split('@')[0] ?? '';
-  return '';
-}
-
 export const Header: React.FC<Props> = ({
   rightText,
   onSaveToUrl,
@@ -44,9 +24,6 @@ export const Header: React.FC<Props> = ({
   onDownloadPdf,
   linkCopied
 }) => {
-  const { user, isLoaded } = useUser();
-  const firstName = displayFirstName(user);
-
   return (
     <header className="app-header">
       <div className="app-header-left">
@@ -75,10 +52,15 @@ export const Header: React.FC<Props> = ({
           </SignedOut>
           <SignedIn>
             <div className="app-header-user">
-              <UserButton />
-              {isLoaded && firstName ? (
-                <span className="app-header-user-name">{firstName}</span>
-              ) : null}
+              <UserButton
+                showName
+                appearance={{
+                  elements: {
+                    userButtonTrigger: 'app-header-user-trigger',
+                    userButtonOuterIdentifier: 'app-header-user-name'
+                  }
+                }}
+              />
             </div>
           </SignedIn>
         </div>

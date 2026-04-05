@@ -802,11 +802,11 @@ export default function PlannerClientPage() {
         <div className="grid" style={{ gridTemplateColumns: 'minmax(0, 1fr)' }}>
           <div className="subtitle">
             <h2 style={{ margin: '0 0 12px', fontSize: '1.25rem' }}>
-              Workspace admin
+              Workspace Administrator
             </h2>
             <div>
-              Manage who can access shared views and assign `admin`, `user`, or
-              `viewer` roles.
+              Manage access rights. Assign roles &apos;Admin&apos;, &apos;User&apos;, or
+              &apos;Viewer&apos;
             </div>
           </div>
           <WorkspaceAdminPanel />

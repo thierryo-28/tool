@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { clerkClient } from '@clerk/nextjs/server';
 import { getSupabaseAdminClient } from '@/lib/server/supabaseAdmin';
+import { displayNameFromClerkUser } from '@/lib/server/clerkDisplayName';
 import {
   getCurrentUserPrimaryEmail,
   getOrCreateProfileId,
@@ -42,14 +44,40 @@ export async function GET(
       .returns<MembershipRow[]>();
     if (error) throw error;
 
+    const rows = (data ?? []).map((m) => ({
+      workspaceId: m.workspace_id,
+      profileId: m.profile_id,
+      role: m.role,
+      clerkUserId: m.profiles?.clerk_user_id ?? '',
+      email: m.profiles?.email ?? null,
+      fullName: m.profiles?.full_name?.trim() || null
+    }));
+
+    const clerkIds = Array.from(
+      new Set(rows.map((r) => r.clerkUserId).filter((id) => id.length > 0))
+    );
+
+    const nameByClerkId: Record<string, string> = {};
+    if (clerkIds.length > 0) {
+      try {
+        const client = clerkClient();
+        const { data: clerkUsers } = await client.users.getUserList({
+          userId: clerkIds,
+          limit: Math.min(Math.max(clerkIds.length, 1), 500)
+        });
+        for (const u of clerkUsers) {
+          const name = displayNameFromClerkUser(u);
+          if (name) nameByClerkId[u.id] = name;
+        }
+      } catch {
+        /* use Supabase full_name / UI fallback only */
+      }
+    }
+
     return NextResponse.json({
-      members: (data ?? []).map((m) => ({
-        workspaceId: m.workspace_id,
-        profileId: m.profile_id,
-        role: m.role,
-        clerkUserId: m.profiles?.clerk_user_id ?? '',
-        email: m.profiles?.email ?? null,
-        fullName: m.profiles?.full_name ?? null
+      members: rows.map((r) => ({
+        ...r,
+        fullName: r.fullName || nameByClerkId[r.clerkUserId] || null
       }))
     });
   } catch (e) {
