@@ -22,7 +22,7 @@ export const PipelineSettingsForm: React.FC<Props> = ({ value, onChange }) => {
     <section className="panel">
       <div className="panel-header">
         <div>
-          <div className="panel-title">Pipeline Planner assumptions</div>
+          <div className="panel-title">Pipeline Planner Assumptions</div>
           <div className="panel-subtitle">Plan pipeline creation need</div>
         </div>
       </div>

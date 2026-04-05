@@ -749,12 +749,6 @@ export default function PlannerClientPage() {
                   SQL targets, pipeline $ inputs, productivity, baseline, hiring
                 </div>
               </div>
-              <div className="chips-row">
-                <span className="chip">
-                  <span className="chip-dot" />
-                  SDR · Ramp · Baseline · Attrition
-                </span>
-              </div>
             </div>
 
             <GlobalSettingsForm
@@ -763,30 +757,27 @@ export default function PlannerClientPage() {
               variant="sql"
             />
 
-            <div style={{ marginTop: 16, marginBottom: 8 }}>
-              <span className="badge">
-                <span className="badge-dot" />
+            <div style={{ marginTop: 14 }}>
+              <div className="panel-subtitle" style={{ marginBottom: 8 }}>
                 Pipeline &amp; revenue from SQL capacity
-              </span>
+              </div>
             </div>
             <SdrPipelineAssumptionsForm
               value={sdrPipeline}
               onChange={setSdrPipeline}
             />
 
-            <div style={{ marginTop: 16, marginBottom: 8 }}>
-              <span className="badge">
-                <span className="badge-dot" />
+            <div style={{ marginTop: 14 }}>
+              <div className="panel-subtitle" style={{ marginBottom: 8 }}>
                 SDR productivity
-              </span>
+              </div>
             </div>
             <SdrRoleAssumptionsTable value={sdrRole} onChange={setSdrRole} />
 
-            <div style={{ marginTop: 16, marginBottom: 8 }}>
-              <span className="badge">
-                <span className="badge-dot" />
+            <div style={{ marginTop: 14 }}>
+              <div className="panel-subtitle" style={{ marginBottom: 8 }}>
                 Existing SDRs at fiscal start
-              </span>
+              </div>
             </div>
             <div className="field-grid">
               <div className="field">
@@ -803,11 +794,10 @@ export default function PlannerClientPage() {
               </div>
             </div>
 
-            <div style={{ marginTop: 16, marginBottom: 8 }}>
-              <span className="badge">
-                <span className="badge-dot" />
+            <div style={{ marginTop: 14 }}>
+              <div className="panel-subtitle" style={{ marginBottom: 8 }}>
                 Hiring plan
-              </span>
+              </div>
             </div>
             <SdrHiringPlanTable value={sdrWaves} onChange={setSdrWaves} />
 
@@ -909,11 +899,10 @@ export default function PlannerClientPage() {
           </div>
           <BaselineForm roles={activeRoles} value={activeBaseline} onChange={setBaseline} />
 
-          <div style={{ marginTop: 16, marginBottom: 8 }}>
-            <span className="badge">
-              <span className="badge-dot" />
+          <div style={{ marginTop: 14 }}>
+            <div className="panel-subtitle" style={{ marginBottom: 8 }}>
               Hiring plan
-            </span>
+            </div>
           </div>
           <HiringPlanTable roles={activeRoles} value={activeWaves} onChange={setWaves} />
 
@@ -942,15 +931,17 @@ export default function PlannerClientPage() {
         <>
         <div className="subtitle">
           <h2 style={{ margin: 0, fontSize: '1.25rem' }}>Sales &amp; Marketing Funnel Planner</h2>
-          <div style={{ marginTop: 8 }}>
-            Plan your top of the funnel and your Marketing Qualified Leads needs
+          <div style={{ marginTop: 8, lineHeight: 1.45 }}>
+            Plan your top of the funnel and your Marketing Qualified Leads needs.
+            You need several inputs taken from your CRM and/or your paid media
+            dashboard.
           </div>
         </div>
         <div className="grid">
           <section className="panel">
             <div className="panel-header">
               <div>
-                <div className="panel-title">Demand gen assumptions</div>
+                <div className="panel-title">Demand Generation Assumptions</div>
                 <div className="panel-subtitle">
                   Budget, funnel conversion, and revenue mix
                 </div>
@@ -1131,7 +1122,7 @@ export default function PlannerClientPage() {
           <section className="panel">
             <div className="panel-header">
               <div>
-                <div className="panel-title">Demand gen outputs</div>
+                <div className="panel-title">Demand Generation Outputs</div>
                 <div className="panel-subtitle">
                   MQL and pipeline creation by month (inbound)
                 </div>

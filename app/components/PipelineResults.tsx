@@ -37,9 +37,9 @@ export const PipelineResults: React.FC<Props> = ({ data, pipelineSettings }) => 
     <section className="panel">
       <div className="panel-header">
         <div>
-          <div className="panel-title">Pipeline creation goals (weekly)</div>
+          <div className="panel-title">Pipeline Creation Goals (week-by-week)</div>
           <div className="panel-subtitle">
-            Existing + new business, back-shifted by sales cycle
+            Existing &amp; New Business, back-shifted by sales cycle
           </div>
         </div>
       </div>
