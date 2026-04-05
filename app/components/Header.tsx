@@ -1,6 +1,14 @@
+'use client';
+
 import React from 'react';
 import Image from 'next/image';
-import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs';
+import {
+  SignedIn,
+  SignedOut,
+  SignInButton,
+  UserButton,
+  useUser
+} from '@clerk/nextjs';
 
 interface Props {
   rightText?: string;
@@ -10,6 +18,25 @@ interface Props {
   linkCopied?: boolean;
 }
 
+function displayFirstName(
+  user:
+    | {
+        firstName?: string | null;
+        fullName?: string | null;
+        primaryEmailAddress?: { emailAddress: string } | null;
+      }
+    | null
+    | undefined
+): string {
+  if (!user) return '';
+  if (user.firstName?.trim()) return user.firstName.trim();
+  const fromFull = user.fullName?.trim().split(/\s+/)[0];
+  if (fromFull) return fromFull;
+  const email = user.primaryEmailAddress?.emailAddress;
+  if (email) return email.split('@')[0] ?? '';
+  return '';
+}
+
 export const Header: React.FC<Props> = ({
   rightText,
   onSaveToUrl,
@@ -17,6 +44,9 @@ export const Header: React.FC<Props> = ({
   onDownloadPdf,
   linkCopied
 }) => {
+  const { user, isLoaded } = useUser();
+  const firstName = displayFirstName(user);
+
   return (
     <header className="app-header">
       <div className="app-header-left">
@@ -32,9 +62,7 @@ export const Header: React.FC<Props> = ({
         </div>
       </div>
       <div className="app-header-right">
-        <div className="app-header-kicker">Planner</div>
-        <div className="app-header-title">{rightText ?? 'Sales Capacity'}</div>
-        <div className="app-header-actions no-print">
+        <div className="app-header-auth no-print">
           <SignedOut>
             <SignInButton mode="modal">
               <button
@@ -46,8 +74,17 @@ export const Header: React.FC<Props> = ({
             </SignInButton>
           </SignedOut>
           <SignedIn>
-            <UserButton />
+            <div className="app-header-user">
+              <UserButton />
+              {isLoaded && firstName ? (
+                <span className="app-header-user-name">{firstName}</span>
+              ) : null}
+            </div>
           </SignedIn>
+        </div>
+        <div className="app-header-kicker">Planner</div>
+        <div className="app-header-title">{rightText ?? 'Sales Capacity'}</div>
+        <div className="app-header-actions no-print">
           <button
             type="button"
             className="button button-secondary button-small"

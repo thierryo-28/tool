@@ -62,7 +62,7 @@ h1 {
 
 .app-header {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
   padding: 2px 2px 0;
@@ -85,6 +85,31 @@ h1 {
   flex-direction: column;
   align-items: flex-end;
   gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.app-header-auth {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.app-header-user {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.app-header-user-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  line-height: 1.2;
 }
 
 .app-header-actions {
