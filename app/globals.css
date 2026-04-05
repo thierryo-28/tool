@@ -156,8 +156,8 @@ h1 {
 }
 
 .grid-pipeline {
-  /* Make the assumptions panel about 20% narrower (relative to default left column). */
-  grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.4fr);
+  /* Narrower assumptions column, wider weekly results / table (vs default .grid). */
+  grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.58fr);
 }
 
 .tabs {
