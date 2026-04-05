@@ -47,11 +47,15 @@ import {
   type TabViewPayload
 } from '@/lib/plannerViewPayloads';
 
+/** Jan 1 of the current calendar year (UTC noon so YYYY-MM-DD stays correct in every TZ). */
+function firstDayOfCurrentYearIso(): string {
+  const y = new Date().getFullYear();
+  return `${y}-01-01T12:00:00.000Z`;
+}
+
 function defaultGlobalSettings(): GlobalSettings {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), 0, 1);
   return {
-    fiscalYearStart: start.toISOString(),
+    fiscalYearStart: firstDayOfCurrentYearIso(),
     months: 12,
     companyTargetAnnual: 10_000_000,
     overAssignmentPct: 0.2,
@@ -130,10 +134,8 @@ function defaultPipelineSettings(): PipelineSettings {
 }
 
 function defaultSdrSettings(): GlobalSettings {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), 0, 1);
   return {
-    fiscalYearStart: start.toISOString(),
+    fiscalYearStart: firstDayOfCurrentYearIso(),
     months: 12,
     companyTargetAnnual: 1000,
     overAssignmentPct: 0.2,
