@@ -73,6 +73,14 @@ const sdrPayloadSchema = z.object({
     })
   ),
   sdrBaseline: z.number().int().min(0),
+  sdrPipeline: z
+    .object({
+      sqlToOpportunityPct: z.number().min(0).max(100),
+      averageOpportunitySize: NonNegative,
+      opportunityToWonPct: z.number().min(0).max(100),
+      salesCycleWeeks: NonNegative
+    })
+    .optional(),
   showResults: z.boolean()
 });
 

@@ -21,7 +21,8 @@ import {
   PipelineOutput,
   SdrRoleAssumption,
   SdrHiringWave,
-  SdrCapacityOutput
+  SdrCapacityOutput,
+  SdrPipelineAssumptions
 } from '@/lib/types';
 import { calculateCapacity } from '@/lib/capacityEngine';
 import { calculateSdrCapacity } from '@/lib/sdrCapacityEngine';
@@ -32,6 +33,7 @@ import { RoleAssumptionsTable } from './components/RoleAssumptionsTable';
 import { HiringPlanTable } from './components/HiringPlanTable';
 import { SdrHiringPlanTable } from './components/SdrHiringPlanTable';
 import { SdrRoleAssumptionsTable } from './components/SdrRoleAssumptionsTable';
+import { SdrPipelineAssumptionsForm } from './components/SdrPipelineAssumptionsForm';
 import { BaselineForm } from './components/BaselineForm';
 import { Header } from './components/Header';
 import { ResultsSummary } from './components/ResultsSummary';
@@ -163,6 +165,15 @@ function defaultSdrWaves(): SdrHiringWave[] {
   return [{ count: 2, startDate: feb }];
 }
 
+function defaultSdrPipelineAssumptions(): SdrPipelineAssumptions {
+  return {
+    sqlToOpportunityPct: 100,
+    averageOpportunitySize: 50_000,
+    opportunityToWonPct: 25,
+    salesCycleWeeks: 12
+  };
+}
+
 type WorkspaceAccessRole = 'admin' | 'user' | 'viewer' | null | 'loading';
 
 export default function PlannerClientPage() {
@@ -203,6 +214,9 @@ export default function PlannerClientPage() {
   const [sdrRole, setSdrRole] = useState<SdrRoleAssumption>(defaultSdrRole);
   const [sdrWaves, setSdrWaves] = useState<SdrHiringWave[]>(defaultSdrWaves);
   const [sdrBaseline, setSdrBaseline] = useState(4);
+  const [sdrPipeline, setSdrPipeline] = useState<SdrPipelineAssumptions>(() =>
+    defaultSdrPipelineAssumptions()
+  );
   const [sdrShowResults, setSdrShowResults] = useState(false);
 
   const isWorkspaceAdmin = workspaceAccessRole === 'admin';
@@ -284,8 +298,14 @@ export default function PlannerClientPage() {
 
   const sdrData: SdrCapacityOutput | null = useMemo(() => {
     if (!sdrShowResults) return null;
-    return calculateSdrCapacity(sdrSettings, sdrRole, sdrWaves, sdrBaseline);
-  }, [sdrSettings, sdrRole, sdrWaves, sdrBaseline, sdrShowResults]);
+    return calculateSdrCapacity(
+      sdrSettings,
+      sdrRole,
+      sdrWaves,
+      sdrBaseline,
+      sdrPipeline
+    );
+  }, [sdrSettings, sdrRole, sdrWaves, sdrBaseline, sdrPipeline, sdrShowResults]);
 
   const handleActiveRolesChange = (updatedActive: RoleAssumption[]) => {
     setRoles((prev) => {
@@ -344,6 +364,7 @@ export default function PlannerClientPage() {
         sdrRole?: SdrRoleAssumption;
         sdrWaves?: SdrHiringWave[];
         sdrBaseline?: number;
+        sdrPipeline?: SdrPipelineAssumptions;
         sdrShowResults?: boolean;
       };
       if (parsed.settings) setSettings(parsed.settings);
@@ -359,7 +380,9 @@ export default function PlannerClientPage() {
       if (parsed.sdrRole) setSdrRole(parsed.sdrRole);
       if (parsed.sdrWaves) setSdrWaves(parsed.sdrWaves);
       if (typeof parsed.sdrBaseline === 'number') setSdrBaseline(parsed.sdrBaseline);
-      if (typeof parsed.sdrShowResults === 'boolean') setSdrShowResults(parsed.sdrShowResults);
+      if (parsed.sdrPipeline) setSdrPipeline(parsed.sdrPipeline);
+      if (typeof parsed.sdrShowResults === 'boolean')
+        setSdrShowResults(parsed.sdrShowResults);
     } catch {
       // ignore malformed view
     } finally {
@@ -382,6 +405,7 @@ export default function PlannerClientPage() {
       sdrRole,
       sdrWaves,
       sdrBaseline,
+      sdrPipeline,
       sdrShowResults
     };
     const encoded = compressToEncodedURIComponent(JSON.stringify(payload));
@@ -448,6 +472,7 @@ export default function PlannerClientPage() {
         sdrRole,
         sdrWaves,
         sdrBaseline,
+        sdrPipeline,
         showResults: sdrShowResults
       };
     }
@@ -474,6 +499,9 @@ export default function PlannerClientPage() {
       setSdrRole(payload.sdrRole);
       setSdrWaves(payload.sdrWaves);
       setSdrBaseline(payload.sdrBaseline);
+      setSdrPipeline(
+        payload.sdrPipeline ?? defaultSdrPipelineAssumptions()
+      );
       setSdrShowResults(payload.showResults);
       return;
     }
@@ -715,7 +743,7 @@ export default function PlannerClientPage() {
               <div>
                 <div className="panel-title">Assumptions</div>
                 <div className="panel-subtitle">
-                  SQL targets, SDR productivity, baseline, and hiring waves
+                  SQL targets, pipeline $ inputs, productivity, baseline, hiring
                 </div>
               </div>
               <div className="chips-row">
@@ -730,6 +758,17 @@ export default function PlannerClientPage() {
               value={sdrSettings}
               onChange={setSdrSettings}
               variant="sql"
+            />
+
+            <div style={{ marginTop: 16, marginBottom: 8 }}>
+              <span className="badge">
+                <span className="badge-dot" />
+                Pipeline &amp; revenue from SQL capacity
+              </span>
+            </div>
+            <SdrPipelineAssumptionsForm
+              value={sdrPipeline}
+              onChange={setSdrPipeline}
             />
 
             <div style={{ marginTop: 16, marginBottom: 8 }}>
@@ -785,7 +824,7 @@ export default function PlannerClientPage() {
               <div>
                 <div className="panel-title">SQL capacity vs target</div>
                 <div className="panel-subtitle">
-                  Annual view plus month-by-month breakdown (SQLs)
+                  SQLs, pipeline $ and expected revenue by month (capacity-based)
                 </div>
               </div>
             </div>

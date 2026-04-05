@@ -76,6 +76,17 @@ export interface SdrHiringWave {
   startDate: string;
 }
 
+/** Funnel $ metrics from monthly SQL capacity (MVP: no sales-cycle lag). */
+export interface SdrPipelineAssumptions {
+  /** Share of SQLs that become qualified opportunities (0–100). */
+  sqlToOpportunityPct: number;
+  averageOpportunitySize: number;
+  /** Opportunity → closed-won (0–100). */
+  opportunityToWonPct: number;
+  /** Stored for future time-phased revenue; not used in MVP formulas. */
+  salesCycleWeeks: number;
+}
+
 export interface SdrMonthlyResult {
   month: string;
   target: number;
@@ -83,6 +94,12 @@ export interface SdrMonthlyResult {
   assignedQuota: number;
   gap: number;
   byRole: Record<SdrRoleId, MonthlyRoleCapacity>;
+  /** Qualified opps / month from capacity × SQL→opp %. */
+  opportunities: number;
+  /** opportunities × average opportunity size ($). */
+  pipelineValue: number;
+  /** opportunities × win rate × average opportunity size ($). */
+  expectedRevenue: number;
 }
 
 export interface SdrCapacitySummary {
@@ -91,6 +108,9 @@ export interface SdrCapacitySummary {
   annualCapacity: number;
   annualAssignedQuota: number;
   annualGap: number;
+  annualOpportunities: number;
+  annualPipelineValue: number;
+  annualExpectedRevenue: number;
 }
 
 export interface SdrCapacityOutput {

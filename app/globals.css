@@ -292,6 +292,13 @@ h1 {
   color: var(--text-muted);
 }
 
+.field-hint {
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
 .field input,
 .field select {
   border-radius: 10px;
@@ -487,6 +494,15 @@ tbody tr:nth-child(even) {
 
 tbody tr:nth-child(odd) {
   background: rgba(255, 255, 255, 0.9);
+}
+
+tfoot tr.table-foot-total {
+  background: var(--surface-2);
+  font-weight: 600;
+}
+
+tfoot tr.table-foot-total td {
+  border-top: 1px solid var(--border-strong);
 }
 
 .row-warning {

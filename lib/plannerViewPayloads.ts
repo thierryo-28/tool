@@ -7,6 +7,7 @@ import {
   RoleAssumption,
   SelectedRoles,
   SdrHiringWave,
+  SdrPipelineAssumptions,
   SdrRoleAssumption
 } from './types';
 
@@ -62,6 +63,8 @@ export interface SdrViewPayload {
   sdrRole: SdrRoleAssumption;
   sdrWaves: SdrHiringWave[];
   sdrBaseline: number;
+  /** Omitted in older saved views; client applies defaults. */
+  sdrPipeline?: SdrPipelineAssumptions;
   showResults: boolean;
 }
 
