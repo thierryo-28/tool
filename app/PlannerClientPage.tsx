@@ -660,9 +660,12 @@ export default function PlannerClientPage() {
             <h2 style={{ margin: 0, fontSize: '1.25rem' }}>
               Revenue Planning Tools
             </h2>
-            <div style={{ marginTop: 8 }}>
-              Choose a planner to start: Sales Capacity, SDR Capacity, Demand
-              Generation, or Pipeline Planner.
+            <div style={{ marginTop: 8, lineHeight: 1.45 }}>
+              This set of tools is for Revenue Leaders, SDR Managers, Growth
+              Leaders who want to plan their entire sales funnel. Choose a
+              planner to start: Sales Capacity, SDR Capacity, Demand Generation,
+              or Pipeline Planner. You can generate a consolidated view that can
+              be shared easily.
             </div>
           </div>
           <div className="grid">
@@ -867,10 +870,6 @@ export default function PlannerClientPage() {
                   ? activeRoles.map((r) => r.id).join(' · ')
                   : 'No roles selected'}
               </span>
-              <span className="chip">
-                <span className="chip-dot" />
-                Ramp · Existing team · Attrition
-              </span>
             </div>
           </div>
 
@@ -896,19 +895,17 @@ export default function PlannerClientPage() {
 
           <GlobalSettingsForm value={settings} onChange={setSettings} />
 
-          <div style={{ marginTop: 16, marginBottom: 8 }}>
-            <span className="badge">
-              <span className="badge-dot" />
+          <div style={{ marginTop: 14 }}>
+            <div className="panel-subtitle" style={{ marginBottom: 8 }}>
               Role productivity
-            </span>
+            </div>
           </div>
           <RoleAssumptionsTable value={activeRoles} onChange={handleActiveRolesChange} />
 
-          <div style={{ marginTop: 16, marginBottom: 8 }}>
-            <span className="badge">
-              <span className="badge-dot" />
+          <div style={{ marginTop: 14 }}>
+            <div className="panel-subtitle" style={{ marginBottom: 8 }}>
               Existing team at fiscal start
-            </span>
+            </div>
           </div>
           <BaselineForm roles={activeRoles} value={activeBaseline} onChange={setBaseline} />
 
