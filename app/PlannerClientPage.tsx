@@ -528,20 +528,6 @@ export default function PlannerClientPage() {
         </button>
         <button
           type="button"
-          className={activeTab === 'capacity' ? 'tab active' : 'tab'}
-          onClick={() => setActiveTab('capacity')}
-        >
-          Sales Capacity
-        </button>
-        <button
-          type="button"
-          className={activeTab === 'sdr' ? 'tab active' : 'tab'}
-          onClick={() => setActiveTab('sdr')}
-        >
-          SDR Capacity
-        </button>
-        <button
-          type="button"
           className={activeTab === 'demand' ? 'tab active' : 'tab'}
           onClick={() => setActiveTab('demand')}
         >
@@ -554,6 +540,20 @@ export default function PlannerClientPage() {
         >
           Pipeline Planner
         </button>
+        <button
+          type="button"
+          className={activeTab === 'sdr' ? 'tab active' : 'tab'}
+          onClick={() => setActiveTab('sdr')}
+        >
+          SDR Capacity
+        </button>
+        <button
+          type="button"
+          className={activeTab === 'capacity' ? 'tab active' : 'tab'}
+          onClick={() => setActiveTab('capacity')}
+        >
+          Sales Capacity
+        </button>
         {isWorkspaceAdmin ? (
           <button
             type="button"
@@ -565,9 +565,15 @@ export default function PlannerClientPage() {
         ) : null}
       </div>
 
-      {activeTab === 'capacity' ? (
+      {activeTab === 'demand' ? (
         <SavedViewsToolbar
-          tab="capacity"
+          tab="demand"
+          getPayload={getPlannerTabPayload}
+          onApply={applyTabPayload}
+        />
+      ) : activeTab === 'pipeline' ? (
+        <SavedViewsToolbar
+          tab="pipeline"
           getPayload={getPlannerTabPayload}
           onApply={applyTabPayload}
         />
@@ -577,15 +583,9 @@ export default function PlannerClientPage() {
           getPayload={getPlannerTabPayload}
           onApply={applyTabPayload}
         />
-      ) : activeTab === 'demand' ? (
+      ) : activeTab === 'capacity' ? (
         <SavedViewsToolbar
-          tab="demand"
-          getPayload={getPlannerTabPayload}
-          onApply={applyTabPayload}
-        />
-      ) : activeTab === 'pipeline' ? (
-        <SavedViewsToolbar
-          tab="pipeline"
+          tab="capacity"
           getPayload={getPlannerTabPayload}
           onApply={applyTabPayload}
         />
@@ -663,8 +663,8 @@ export default function PlannerClientPage() {
             <div style={{ marginTop: 8, lineHeight: 1.45 }}>
               This set of tools is for Revenue Leaders, SDR Managers, Growth
               Leaders who want to plan their entire sales funnel. Choose a
-              planner to start: Sales Capacity, SDR Capacity, Demand Generation,
-              or Pipeline Planner. You can generate a consolidated view that can
+              planner to start: Demand Generation, Pipeline Planner, SDR Capacity,
+              or Sales Capacity. You can generate a consolidated view that can
               be shared easily.
             </div>
           </div>
@@ -682,9 +682,16 @@ export default function PlannerClientPage() {
                 <button
                   type="button"
                   className="button button-secondary"
-                  onClick={() => setActiveTab('capacity')}
+                  onClick={() => setActiveTab('demand')}
                 >
-                  Open Sales Capacity
+                  Open Demand Generation
+                </button>
+                <button
+                  type="button"
+                  className="button button-secondary"
+                  onClick={() => setActiveTab('pipeline')}
+                >
+                  Open Pipeline Planner
                 </button>
                 <button
                   type="button"
@@ -696,16 +703,9 @@ export default function PlannerClientPage() {
                 <button
                   type="button"
                   className="button button-secondary"
-                  onClick={() => setActiveTab('demand')}
+                  onClick={() => setActiveTab('capacity')}
                 >
-                  Open Demand Generation
-                </button>
-                <button
-                  type="button"
-                  className="button button-secondary"
-                  onClick={() => setActiveTab('pipeline')}
-                >
-                  Open Pipeline Planner
+                  Open Sales Capacity
                 </button>
               </div>
             </section>
@@ -720,20 +720,20 @@ export default function PlannerClientPage() {
               </div>
               <ul style={{ margin: 0, paddingLeft: 18 }}>
                 <li style={{ marginBottom: 6 }}>
-                  <strong>Sales Capacity</strong>: plan headcount and quotas to
-                  hit target.
+                  <strong>Demand Generation</strong>: plan MQL and pipeline
+                  creation from funnel assumptions.
+                </li>
+                <li style={{ marginBottom: 6 }}>
+                  <strong>Pipeline Planner</strong>: plan weekly pipeline needs
+                  from revenue and conversion inputs.
                 </li>
                 <li style={{ marginBottom: 6 }}>
                   <strong>SDR Capacity</strong>: plan SDR headcount and SQL quotas
                   to hit an annual SQL target.
                 </li>
-                <li style={{ marginBottom: 6 }}>
-                  <strong>Demand Generation</strong>: plan MQL and pipeline
-                  creation from funnel assumptions.
-                </li>
                 <li>
-                  <strong>Pipeline Planner</strong>: plan weekly pipeline needs
-                  from revenue and conversion inputs.
+                  <strong>Sales Capacity</strong>: plan headcount and quotas to
+                  hit target.
                 </li>
               </ul>
             </section>
