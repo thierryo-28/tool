@@ -199,7 +199,14 @@ export default function PlannerClientPage() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [hydratedFromUrl, setHydratedFromUrl] = useState(false);
 
-  type TabId = 'home' | 'capacity' | 'sdr' | 'demand' | 'pipeline' | 'admin';
+  type TabId =
+    | 'home'
+    | 'capacity'
+    | 'sdr'
+    | 'demand'
+    | 'pipeline'
+    | 'summary'
+    | 'admin';
   const [activeTab, setActiveTab] = useState<TabId>('home');
 
   const [demandSettings, setDemandSettings] = useState<DemandSettings>(
@@ -554,6 +561,13 @@ export default function PlannerClientPage() {
         >
           Sales Capacity
         </button>
+        <button
+          type="button"
+          className={activeTab === 'summary' ? 'tab active' : 'tab'}
+          onClick={() => setActiveTab('summary')}
+        >
+          Summary
+        </button>
         {isWorkspaceAdmin ? (
           <button
             type="button"
@@ -661,11 +675,10 @@ export default function PlannerClientPage() {
               Revenue Planning Tools
             </h2>
             <div style={{ marginTop: 8, lineHeight: 1.45 }}>
-              This set of tools is for Revenue Leaders, SDR Managers, Growth
-              Leaders who want to plan their entire sales funnel. Choose a
-              planner to start: Demand Generation, Pipeline Planner, SDR Capacity,
-              or Sales Capacity. You can generate a consolidated view that can
-              be shared easily.
+              Choose a planner to start: Demand Generation, Pipeline Planner, SDR
+              Capacity, or Sales Capacity. Each planning tool works
+              independently. Use the Summary tab to generate a consolidated and
+              shareable view.
             </div>
           </div>
           <div className="grid">
@@ -1192,6 +1205,30 @@ export default function PlannerClientPage() {
           </section>
         </div>
         </>
+      ) : activeTab === 'summary' ? (
+        <div className="grid" style={{ gridTemplateColumns: 'minmax(0, 1fr)' }}>
+          <div className="subtitle">
+            <h2 style={{ margin: '0 0 12px', fontSize: '1.25rem' }}>
+              Summary
+            </h2>
+            <div>
+              Build a consolidated, shareable view across all planning tools.
+            </div>
+          </div>
+          <section className="panel">
+            <div className="panel-header">
+              <div>
+                <div className="panel-title">Consolidated planning view</div>
+                <div className="panel-subtitle">
+                  Demand, pipeline, SDR capacity, and sales capacity in one place
+                </div>
+              </div>
+            </div>
+            <div>
+              Summary reporting will appear here.
+            </div>
+          </section>
+        </div>
       ) : (
         <div className="grid grid-pipeline">
           <PipelineSettingsForm value={pipelineSettings} onChange={setPipelineSettings} />
