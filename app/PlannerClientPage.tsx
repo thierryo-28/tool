@@ -43,6 +43,12 @@ import { PipelineSettingsForm } from './components/PipelineSettingsForm';
 import { PipelineResults } from './components/PipelineResults';
 import { SavedViewsToolbar } from './components/SavedViewsToolbar';
 import { WorkspaceAdminPanel } from './components/WorkspaceAdminPanel';
+import type { SavedPlannerTab, SavedViewRecord } from '@/lib/savedViews';
+import { listViewsForTab } from '@/lib/savedViews';
+import {
+  isRemoteViewsEnabled,
+  listRemoteViewsForTab
+} from '@/lib/remoteSavedViews';
 import {
   mergePlannerGlobals,
   plannerGlobalsFromSettings,
@@ -175,6 +181,66 @@ function defaultSdrPipelineAssumptions(): SdrPipelineAssumptions {
 }
 
 type WorkspaceAccessRole = 'admin' | 'user' | 'viewer' | null | 'loading';
+type SummarySelections = {
+  demand: string;
+  pipeline: string;
+  sdr: string;
+  capacity: string;
+};
+
+type SummarySelectedMeta = {
+  demand: SavedViewRecord | null;
+  pipeline: SavedViewRecord | null;
+  sdr: SavedViewRecord | null;
+  capacity: SavedViewRecord | null;
+};
+
+type SummaryRecipeRecord = {
+  id: string;
+  name: string;
+  updatedAt: string;
+  selections: SummarySelections;
+};
+
+const SUMMARY_RECIPES_STORAGE_KEY = 'revenuePlanner.summaryRecipes.v1';
+
+function newSummaryRecipeId(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return `sr_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+}
+
+function loadSummaryRecipes(): SummaryRecipeRecord[] {
+  if (typeof window === 'undefined') return [];
+  const raw = window.localStorage.getItem(SUMMARY_RECIPES_STORAGE_KEY);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter(
+        (row): row is SummaryRecipeRecord =>
+          !!row &&
+          typeof row === 'object' &&
+          typeof (row as SummaryRecipeRecord).id === 'string' &&
+          typeof (row as SummaryRecipeRecord).name === 'string' &&
+          typeof (row as SummaryRecipeRecord).updatedAt === 'string' &&
+          typeof (row as SummaryRecipeRecord).selections === 'object'
+      )
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  } catch {
+    return [];
+  }
+}
+
+function persistSummaryRecipes(recipes: SummaryRecipeRecord[]): void {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(
+    SUMMARY_RECIPES_STORAGE_KEY,
+    JSON.stringify(recipes)
+  );
+}
 
 export default function PlannerClientPage() {
   const router = useRouter();
@@ -225,8 +291,65 @@ export default function PlannerClientPage() {
     defaultSdrPipelineAssumptions()
   );
   const [sdrShowResults, setSdrShowResults] = useState(false);
+  const [summarySelections, setSummarySelections] = useState<SummarySelections>({
+    demand: '',
+    pipeline: '',
+    sdr: '',
+    capacity: ''
+  });
+  const [summaryViews, setSummaryViews] = useState<
+    Record<SavedPlannerTab, SavedViewRecord[]>
+  >({
+    demand: [],
+    pipeline: [],
+    sdr: [],
+    capacity: []
+  });
+  const [summaryWarnings, setSummaryWarnings] = useState<string[]>([]);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [summaryRecipeError, setSummaryRecipeError] = useState<string | null>(null);
+  const [summaryModeNotice, setSummaryModeNotice] = useState<string | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryGenerated, setSummaryGenerated] = useState(false);
+  const [summaryShowDetails, setSummaryShowDetails] = useState(false);
+  const [summarySelectedMeta, setSummarySelectedMeta] = useState<SummarySelectedMeta>({
+    demand: null,
+    pipeline: null,
+    sdr: null,
+    capacity: null
+  });
+  const [summaryRecipes, setSummaryRecipes] = useState<SummaryRecipeRecord[]>([]);
+  const [summaryRecipeName, setSummaryRecipeName] = useState('');
+  const [summaryRecipeLoadId, setSummaryRecipeLoadId] = useState('');
+  const [summaryDemandOutput, setSummaryDemandOutput] = useState<DemandOutput | null>(
+    null
+  );
+  const [summaryPipelineOutput, setSummaryPipelineOutput] =
+    useState<PipelineOutput | null>(null);
+  const [summarySdrOutput, setSummarySdrOutput] = useState<SdrCapacityOutput | null>(
+    null
+  );
+  const [summaryCapacityOutput, setSummaryCapacityOutput] =
+    useState<CapacityOutput | null>(null);
 
   const isWorkspaceAdmin = workspaceAccessRole === 'admin';
+
+  const formatCurrency = (n: number): string =>
+    `$${Math.round(n).toLocaleString()}`;
+
+  const formatNumber = (n: number): string =>
+    Math.round(n).toLocaleString();
+
+  const formatDateTime = (iso: string): string => {
+    const d = new Date(iso);
+    return d.toLocaleString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -279,6 +402,211 @@ export default function PlannerClientPage() {
       setActiveTab('home');
     }
   }, [activeTab, workspaceAccessRole]);
+
+  const refreshSummaryViews = async () => {
+    const tabs: SavedPlannerTab[] = ['demand', 'pipeline', 'sdr', 'capacity'];
+    setSummaryLoading(true);
+    if (!isRemoteViewsEnabled()) {
+      setSummaryViews({
+        demand: listViewsForTab('demand'),
+        pipeline: listViewsForTab('pipeline'),
+        sdr: listViewsForTab('sdr'),
+        capacity: listViewsForTab('capacity')
+      });
+      setSummaryModeNotice(null);
+      setSummaryLoading(false);
+      return;
+    }
+    try {
+      const [demandViews, pipelineViews, sdrViews, capacityViews] =
+        await Promise.all(tabs.map((tab) => listRemoteViewsForTab(tab)));
+      setSummaryViews({
+        demand: demandViews,
+        pipeline: pipelineViews,
+        sdr: sdrViews,
+        capacity: capacityViews
+      });
+      setSummaryModeNotice(null);
+    } catch {
+      setSummaryViews({
+        demand: listViewsForTab('demand'),
+        pipeline: listViewsForTab('pipeline'),
+        sdr: listViewsForTab('sdr'),
+        capacity: listViewsForTab('capacity')
+      });
+      setSummaryModeNotice('Using local saved views (remote unavailable).');
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab !== 'summary') return;
+    void refreshSummaryViews();
+    setSummaryRecipes(loadSummaryRecipes());
+  }, [activeTab]);
+
+  useEffect(() => {
+    setSummaryGenerated(false);
+    setSummaryWarnings([]);
+    setSummaryError(null);
+  }, [summarySelections]);
+
+  const handleSaveSummaryRecipe = () => {
+    setSummaryRecipeError(null);
+    const trimmed = summaryRecipeName.trim().slice(0, 80);
+    if (!trimmed) {
+      setSummaryRecipeError('Enter a recipe name.');
+      return;
+    }
+    if (
+      !summarySelections.demand ||
+      !summarySelections.pipeline ||
+      !summarySelections.sdr ||
+      !summarySelections.capacity
+    ) {
+      setSummaryRecipeError('Select all four views before saving a recipe.');
+      return;
+    }
+    const now = new Date().toISOString();
+    const all = loadSummaryRecipes();
+    const existing = all.find((r) => r.name.toLowerCase() === trimmed.toLowerCase());
+    const next = existing
+      ? all.map((r) =>
+          r.id === existing.id
+            ? {
+                ...r,
+                name: trimmed,
+                updatedAt: now,
+                selections: summarySelections
+              }
+            : r
+        )
+      : [
+          ...all,
+          {
+            id: newSummaryRecipeId(),
+            name: trimmed,
+            updatedAt: now,
+            selections: summarySelections
+          }
+        ];
+    persistSummaryRecipes(next);
+    setSummaryRecipes(loadSummaryRecipes());
+    setSummaryRecipeName('');
+  };
+
+  const handleLoadSummaryRecipe = (id: string) => {
+    if (!id) return;
+    const recipe = summaryRecipes.find((r) => r.id === id);
+    if (!recipe) {
+      setSummaryRecipeError('Recipe not found.');
+      return;
+    }
+    setSummaryRecipeError(null);
+    setSummarySelections(recipe.selections);
+    setSummaryRecipeLoadId('');
+  };
+
+  const handleGenerateSummary = () => {
+    setSummaryError(null);
+    setSummaryRecipeError(null);
+    const selectedDemand = summaryViews.demand.find(
+      (v) => v.id === summarySelections.demand
+    );
+    const selectedPipeline = summaryViews.pipeline.find(
+      (v) => v.id === summarySelections.pipeline
+    );
+    const selectedSdr = summaryViews.sdr.find((v) => v.id === summarySelections.sdr);
+    const selectedCapacity = summaryViews.capacity.find(
+      (v) => v.id === summarySelections.capacity
+    );
+
+    if (!selectedDemand || !selectedPipeline || !selectedSdr || !selectedCapacity) {
+      setSummaryError('Please select one saved view for each planner.');
+      return;
+    }
+
+    const demandPayload = selectedDemand.payload;
+    const pipelinePayload = selectedPipeline.payload;
+    const sdrPayload = selectedSdr.payload;
+    const capacityPayload = selectedCapacity.payload;
+
+    if (
+      demandPayload.kind !== 'demand' ||
+      pipelinePayload.kind !== 'pipeline' ||
+      sdrPayload.kind !== 'sdr' ||
+      capacityPayload.kind !== 'capacity'
+    ) {
+      setSummaryError(
+        'One selected view does not match its planner type. Please reselect views.'
+      );
+      return;
+    }
+
+    const demandGlobal = mergePlannerGlobals(defaultGlobalSettings(), demandPayload.globals);
+    const pipelineGlobal = mergePlannerGlobals(
+      defaultGlobalSettings(),
+      pipelinePayload.globals
+    );
+
+    const nextDemand = calculateDemandPlan(demandGlobal, demandPayload.demandSettings);
+    const nextPipeline = calculatePipelinePlan(
+      pipelineGlobal,
+      pipelinePayload.pipelineSettings
+    );
+    const nextSdr = calculateSdrCapacity(
+      sdrPayload.settings,
+      sdrPayload.sdrRole,
+      sdrPayload.sdrWaves,
+      sdrPayload.sdrBaseline,
+      sdrPayload.sdrPipeline ?? defaultSdrPipelineAssumptions()
+    );
+    const nextCapacity = calculateCapacity(
+      capacityPayload.settings,
+      capacityPayload.roles,
+      capacityPayload.waves,
+      capacityPayload.baseline
+    );
+
+    const warningSet = new Set<string>();
+    const fiscalStarts = [
+      demandGlobal.fiscalYearStart,
+      pipelineGlobal.fiscalYearStart,
+      sdrPayload.settings.fiscalYearStart,
+      capacityPayload.settings.fiscalYearStart
+    ];
+    const months = [
+      demandGlobal.months,
+      pipelineGlobal.months,
+      sdrPayload.settings.months,
+      capacityPayload.settings.months
+    ];
+
+    if (new Set(fiscalStarts).size > 1) {
+      warningSet.add(
+        'Selected views use different fiscal year start dates; month/week timelines may not align exactly.'
+      );
+    }
+    if (new Set(months).size > 1) {
+      warningSet.add(
+        'Selected views use different planning horizons (months); totals are valid per planner but not perfectly time-aligned.'
+      );
+    }
+
+    setSummaryWarnings(Array.from(warningSet));
+    setSummarySelectedMeta({
+      demand: selectedDemand,
+      pipeline: selectedPipeline,
+      sdr: selectedSdr,
+      capacity: selectedCapacity
+    });
+    setSummaryDemandOutput(nextDemand);
+    setSummaryPipelineOutput(nextPipeline);
+    setSummarySdrOutput(nextSdr);
+    setSummaryCapacityOutput(nextCapacity);
+    setSummaryGenerated(true);
+  };
 
   const activeRoles = useMemo(
     () => roles.filter((r) => selectedRoles[r.id]),
@@ -1212,22 +1540,522 @@ export default function PlannerClientPage() {
               Summary
             </h2>
             <div>
-              Build a consolidated, shareable view across all planning tools.
+              Select one saved view per planner, then generate a consolidated and
+              shareable overview.
             </div>
           </div>
           <section className="panel">
             <div className="panel-header">
               <div>
-                <div className="panel-title">Consolidated planning view</div>
+                <div className="panel-title">Summary inputs</div>
                 <div className="panel-subtitle">
-                  Demand, pipeline, SDR capacity, and sales capacity in one place
+                  Pick the named views to include
                 </div>
               </div>
             </div>
-            <div>
-              Summary reporting will appear here.
+            <div className="field-grid">
+              <div className="field">
+                <label htmlFor="summary-demand-view">Demand Generation view</label>
+                <select
+                  id="summary-demand-view"
+                  value={summarySelections.demand}
+                  onChange={(e) =>
+                    setSummarySelections((prev) => ({
+                      ...prev,
+                      demand: e.target.value
+                    }))
+                  }
+                >
+                  <option value="">Select…</option>
+                  {summaryViews.demand.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label htmlFor="summary-pipeline-view">Pipeline Planner view</label>
+                <select
+                  id="summary-pipeline-view"
+                  value={summarySelections.pipeline}
+                  onChange={(e) =>
+                    setSummarySelections((prev) => ({
+                      ...prev,
+                      pipeline: e.target.value
+                    }))
+                  }
+                >
+                  <option value="">Select…</option>
+                  {summaryViews.pipeline.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label htmlFor="summary-sdr-view">SDR Capacity view</label>
+                <select
+                  id="summary-sdr-view"
+                  value={summarySelections.sdr}
+                  onChange={(e) =>
+                    setSummarySelections((prev) => ({ ...prev, sdr: e.target.value }))
+                  }
+                >
+                  <option value="">Select…</option>
+                  {summaryViews.sdr.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label htmlFor="summary-capacity-view">Sales Capacity view</label>
+                <select
+                  id="summary-capacity-view"
+                  value={summarySelections.capacity}
+                  onChange={(e) =>
+                    setSummarySelections((prev) => ({
+                      ...prev,
+                      capacity: e.target.value
+                    }))
+                  }
+                >
+                  <option value="">Select…</option>
+                  {summaryViews.capacity.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
+            <div className="field-grid" style={{ marginTop: 12 }}>
+              <div className="field">
+                <label htmlFor="summary-recipe-name">Save Summary recipe</label>
+                <input
+                  id="summary-recipe-name"
+                  type="text"
+                  maxLength={80}
+                  value={summaryRecipeName}
+                  onChange={(e) => setSummaryRecipeName(e.target.value)}
+                  placeholder="e.g. Q3 board package"
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="summary-recipe-load">Load recipe</label>
+                <select
+                  id="summary-recipe-load"
+                  value={summaryRecipeLoadId}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setSummaryRecipeLoadId(v);
+                    handleLoadSummaryRecipe(v);
+                  }}
+                >
+                  <option value="">Select...</option>
+                  {summaryRecipes.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="button-row no-print" style={{ marginTop: 12 }}>
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={() => void refreshSummaryViews()}
+              >
+                Refresh views
+              </button>
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={handleSaveSummaryRecipe}
+              >
+                Save recipe
+              </button>
+              <button type="button" className="button" onClick={handleGenerateSummary}>
+                Generate summary
+              </button>
+            </div>
+            <label
+              className="no-print"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: 8 }}
+            >
+              <input
+                type="checkbox"
+                checked={summaryShowDetails}
+                onChange={(e) => setSummaryShowDetails(e.target.checked)}
+              />
+              Show detailed tables
+            </label>
+            {summaryLoading ? (
+              <div style={{ marginTop: 8 }}>Loading saved views…</div>
+            ) : null}
+            {summaryModeNotice ? (
+              <div className="saved-views-error" style={{ marginTop: 8 }}>
+                {summaryModeNotice}
+              </div>
+            ) : null}
+            {summaryError ? (
+              <div className="saved-views-error" style={{ marginTop: 8 }}>
+                {summaryError}
+              </div>
+            ) : null}
+            {summaryRecipeError ? (
+              <div className="saved-views-error" style={{ marginTop: 8 }}>
+                {summaryRecipeError}
+              </div>
+            ) : null}
           </section>
+          {summaryWarnings.length > 0 ? (
+            <section className="panel">
+              <div className="panel-header">
+                <div>
+                  <div className="panel-title">Summary warnings</div>
+                </div>
+              </div>
+              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                {summaryWarnings.map((w) => (
+                  <li key={w}>{w}</li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+          {summaryGenerated ? (
+            <>
+              <section className="panel">
+                <div className="panel-header">
+                  <div>
+                    <div className="panel-title">Demand Generation</div>
+                    <div className="panel-subtitle">Annual output snapshot</div>
+                    {summarySelectedMeta.demand ? (
+                      <div
+                        style={{
+                          marginTop: 6,
+                          display: 'flex',
+                          gap: 8,
+                          flexWrap: 'wrap',
+                          fontSize: 12,
+                          color: 'var(--muted)'
+                        }}
+                      >
+                        <span className="chip">View: {summarySelectedMeta.demand.name}</span>
+                        <span className="chip">
+                          Last updated: {formatDateTime(summarySelectedMeta.demand.updatedAt)}
+                        </span>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+                {summaryDemandOutput ? (
+                  <>
+                    <div className="summary-row">
+                      <div className="summary-card">
+                        <div className="summary-label">Inbound MQLs / year</div>
+                        <div className="summary-value">
+                          {formatNumber(summaryDemandOutput.summary.mqlInboundYear)}
+                        </div>
+                      </div>
+                      <div className="summary-card">
+                        <div className="summary-label">Opportunities / year</div>
+                        <div className="summary-value">
+                          {formatNumber(summaryDemandOutput.summary.opportunitiesYear)}
+                        </div>
+                      </div>
+                      <div className="summary-card">
+                        <div className="summary-label">Pipeline / year</div>
+                        <div className="summary-value">
+                          {formatCurrency(summaryDemandOutput.summary.pipelineYear)}
+                        </div>
+                      </div>
+                    </div>
+                    {summaryShowDetails ? (
+                      <div className="table-wrapper">
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>Month</th>
+                              <th>MQL total</th>
+                              <th>Opportunities</th>
+                              <th>Pipeline</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {summaryDemandOutput.months.map((row) => (
+                              <tr key={row.month}>
+                                <td>
+                                  {new Date(row.month).toLocaleDateString(undefined, {
+                                    month: 'short',
+                                    year: '2-digit'
+                                  })}
+                                </td>
+                                <td>{formatNumber(row.mqlTotal)}</td>
+                                <td>{formatNumber(row.opportunities)}</td>
+                                <td>{formatCurrency(row.pipeline)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : null}
+                  </>
+                ) : null}
+              </section>
+
+              <section className="panel">
+                <div className="panel-header">
+                  <div>
+                    <div className="panel-title">Pipeline Planner</div>
+                    <div className="panel-subtitle">Annual output snapshot</div>
+                    {summarySelectedMeta.pipeline ? (
+                      <div
+                        style={{
+                          marginTop: 6,
+                          display: 'flex',
+                          gap: 8,
+                          flexWrap: 'wrap',
+                          fontSize: 12,
+                          color: 'var(--muted)'
+                        }}
+                      >
+                        <span className="chip">View: {summarySelectedMeta.pipeline.name}</span>
+                        <span className="chip">
+                          Last updated: {formatDateTime(summarySelectedMeta.pipeline.updatedAt)}
+                        </span>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+                {summaryPipelineOutput ? (
+                  <>
+                    <div className="summary-row">
+                      <div className="summary-card">
+                        <div className="summary-label">Won target / year</div>
+                        <div className="summary-value">
+                          {formatCurrency(summaryPipelineOutput.summary.wonTotalYear)}
+                        </div>
+                      </div>
+                      <div className="summary-card">
+                        <div className="summary-label">Pipeline required / year</div>
+                        <div className="summary-value">
+                          {formatCurrency(summaryPipelineOutput.summary.pipelineTotalYear)}
+                        </div>
+                      </div>
+                      <div className="summary-card">
+                        <div className="summary-label">Opportunities / year</div>
+                        <div className="summary-value">
+                          {formatNumber(summaryPipelineOutput.summary.oppsTotalYear)}
+                        </div>
+                      </div>
+                    </div>
+                    {summaryShowDetails ? (
+                      <div className="table-wrapper">
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>Week</th>
+                              <th>Won total</th>
+                              <th>Pipeline total</th>
+                              <th>Opps total</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {summaryPipelineOutput.weeks.map((row) => (
+                              <tr key={row.week}>
+                                <td>
+                                  {new Date(row.week).toLocaleDateString(undefined, {
+                                    month: 'short',
+                                    day: '2-digit'
+                                  })}
+                                </td>
+                                <td>{formatCurrency(row.wonInbound + row.wonOutbound)}</td>
+                                <td>{formatCurrency(row.pipelineTotal)}</td>
+                                <td>{formatNumber(row.oppsTotal)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : null}
+                  </>
+                ) : null}
+              </section>
+
+              <section className="panel">
+                <div className="panel-header">
+                  <div>
+                    <div className="panel-title">SDR Capacity</div>
+                    <div className="panel-subtitle">Annual output snapshot</div>
+                    {summarySelectedMeta.sdr ? (
+                      <div
+                        style={{
+                          marginTop: 6,
+                          display: 'flex',
+                          gap: 8,
+                          flexWrap: 'wrap',
+                          fontSize: 12,
+                          color: 'var(--muted)'
+                        }}
+                      >
+                        <span className="chip">View: {summarySelectedMeta.sdr.name}</span>
+                        <span className="chip">
+                          Last updated: {formatDateTime(summarySelectedMeta.sdr.updatedAt)}
+                        </span>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+                {summarySdrOutput ? (
+                  <>
+                    <div className="summary-row">
+                      <div className="summary-card">
+                        <div className="summary-label">SQL target / year</div>
+                        <div className="summary-value">
+                          {formatNumber(summarySdrOutput.summary.annualTarget)}
+                        </div>
+                      </div>
+                      <div className="summary-card">
+                        <div className="summary-label">Pipeline from SQLs / year</div>
+                        <div className="summary-value">
+                          {formatCurrency(summarySdrOutput.summary.annualPipelineValue)}
+                        </div>
+                      </div>
+                      <div className="summary-card">
+                        <div className="summary-label">Expected revenue / year</div>
+                        <div className="summary-value">
+                          {formatCurrency(summarySdrOutput.summary.annualExpectedRevenue)}
+                        </div>
+                      </div>
+                    </div>
+                    {summaryShowDetails ? (
+                      <div className="table-wrapper">
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>Month</th>
+                              <th>SQL capacity</th>
+                              <th>Opportunities</th>
+                              <th>Pipeline value</th>
+                              <th>Expected revenue</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {summarySdrOutput.months.map((row) => (
+                              <tr key={row.month}>
+                                <td>
+                                  {new Date(row.month).toLocaleDateString(undefined, {
+                                    month: 'short',
+                                    year: '2-digit'
+                                  })}
+                                </td>
+                                <td>{formatNumber(row.capacity)}</td>
+                                <td>{formatNumber(row.opportunities)}</td>
+                                <td>{formatCurrency(row.pipelineValue)}</td>
+                                <td>{formatCurrency(row.expectedRevenue)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : null}
+                  </>
+                ) : null}
+              </section>
+
+              <section className="panel">
+                <div className="panel-header">
+                  <div>
+                    <div className="panel-title">Sales Capacity</div>
+                    <div className="panel-subtitle">Annual output snapshot</div>
+                    {summarySelectedMeta.capacity ? (
+                      <div
+                        style={{
+                          marginTop: 6,
+                          display: 'flex',
+                          gap: 8,
+                          flexWrap: 'wrap',
+                          fontSize: 12,
+                          color: 'var(--muted)'
+                        }}
+                      >
+                        <span className="chip">View: {summarySelectedMeta.capacity.name}</span>
+                        <span className="chip">
+                          Last updated: {formatDateTime(summarySelectedMeta.capacity.updatedAt)}
+                        </span>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+                {summaryCapacityOutput ? (
+                  <>
+                    <div className="summary-row">
+                      <div className="summary-card">
+                        <div className="summary-label">Revenue target / year</div>
+                        <div className="summary-value">
+                          {formatCurrency(summaryCapacityOutput.summary.annualTarget)}
+                        </div>
+                      </div>
+                      <div className="summary-card">
+                        <div className="summary-label">Assigned quota / year</div>
+                        <div className="summary-value">
+                          {formatCurrency(summaryCapacityOutput.summary.annualAssignedQuota)}
+                        </div>
+                      </div>
+                      <div className="summary-card">
+                        <div className="summary-label">Annual gap</div>
+                        <div className="summary-value">
+                          {formatCurrency(summaryCapacityOutput.summary.annualGap)}
+                        </div>
+                      </div>
+                    </div>
+                    {summaryShowDetails ? (
+                      <div className="table-wrapper">
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>Month</th>
+                              <th>Target</th>
+                              <th>Assigned quota</th>
+                              <th>Gap</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {summaryCapacityOutput.months.map((row) => (
+                              <tr key={row.month}>
+                                <td>
+                                  {new Date(row.month).toLocaleDateString(undefined, {
+                                    month: 'short',
+                                    year: '2-digit'
+                                  })}
+                                </td>
+                                <td>{formatCurrency(row.target)}</td>
+                                <td>{formatCurrency(row.assignedQuota)}</td>
+                                <td>{formatCurrency(row.gap)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : null}
+                  </>
+                ) : null}
+              </section>
+            </>
+          ) : null}
+          {!summaryGenerated ? (
+            <section className="panel">
+              <div>
+                Summary results will appear here after you select all four views
+                and click "Generate summary".
+              </div>
+            </section>
+          ) : null}
         </div>
       ) : (
         <div className="grid grid-pipeline">
