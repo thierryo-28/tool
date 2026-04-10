@@ -180,6 +180,16 @@ function defaultSdrPipelineAssumptions(): SdrPipelineAssumptions {
   };
 }
 
+function normalizeMonthIso(value: string): string {
+  if (/^\d{4}-\d{2}$/.test(value)) {
+    return `${value}-01T12:00:00.000Z`;
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return `${value}T12:00:00.000Z`;
+  }
+  return value;
+}
+
 type WorkspaceAccessRole = 'admin' | 'user' | 'viewer' | null | 'loading';
 type SummarySelections = {
   demand: string;
@@ -780,7 +790,11 @@ export default function PlannerClientPage() {
         kind: 'capacity',
         settings,
         roles,
-        waves,
+        waves: waves.map((w) => ({
+          ...w,
+          count: Math.max(0, Math.round(w.count)),
+          startDate: normalizeMonthIso(w.startDate)
+        })),
         baseline,
         selectedRoles,
         showResults
@@ -805,8 +819,12 @@ export default function PlannerClientPage() {
         kind: 'sdr',
         settings: sdrSettings,
         sdrRole,
-        sdrWaves,
-        sdrBaseline,
+        sdrWaves: sdrWaves.map((w) => ({
+          ...w,
+          count: Math.max(0, Math.round(w.count)),
+          startDate: normalizeMonthIso(w.startDate)
+        })),
+        sdrBaseline: Math.max(0, Math.round(sdrBaseline)),
         sdrPipeline,
         showResults: sdrShowResults
       };
