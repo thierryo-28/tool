@@ -35,20 +35,24 @@ export const SavedViewsToolbar: React.FC<Props> = ({
   const [modeNotice, setModeNotice] = useState<string | null>(null);
   const [loadKey, setLoadKey] = useState('');
   const [deleteKey, setDeleteKey] = useState('');
+  const [remoteUnavailable, setRemoteUnavailable] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!isRemoteViewsEnabled()) {
       setViews(listViewsForTab(tab));
       setModeNotice(null);
+      setRemoteUnavailable(false);
       return;
     }
     try {
       const remote = await listRemoteViewsForTab(tab);
       setViews(remote);
       setModeNotice(null);
+      setRemoteUnavailable(false);
     } catch {
       setViews(listViewsForTab(tab));
       setModeNotice('Using local saved views (remote unavailable).');
+      setRemoteUnavailable(true);
     }
   }, [tab]);
 
@@ -71,12 +75,29 @@ export const SavedViewsToolbar: React.FC<Props> = ({
     try {
       const payload = getPayload();
       if (isRemoteViewsEnabled()) {
-        try {
-          await saveRemoteNamedView(tab, saveName, payload);
-          setModeNotice(null);
-        } catch {
+        // If remote listing is already unavailable, stay fully local for consistency.
+        if (remoteUnavailable) {
           saveNamedView(tab, saveName, payload);
           setModeNotice('Saved locally (remote unavailable).');
+        } else {
+          let saved = false;
+          let lastErr: unknown = null;
+          for (let attempt = 0; attempt < 2; attempt += 1) {
+            try {
+              await saveRemoteNamedView(tab, saveName, payload);
+              saved = true;
+              break;
+            } catch (e) {
+              lastErr = e;
+            }
+          }
+          if (!saved) {
+            throw (
+              lastErr ??
+              new Error('Could not save shared view. Please try again.')
+            );
+          }
+          setModeNotice(null);
         }
       } else {
         saveNamedView(tab, saveName, payload);
@@ -85,7 +106,11 @@ export const SavedViewsToolbar: React.FC<Props> = ({
       setSaveOpen(false);
       await refresh();
     } catch (e) {
-      setSaveError(e instanceof Error ? e.message : 'Could not save view.');
+      setSaveError(
+        e instanceof Error
+          ? e.message
+          : 'Could not save shared view right now. Please retry.'
+      );
     }
   };
 

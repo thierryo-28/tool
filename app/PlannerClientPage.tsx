@@ -1921,6 +1921,26 @@ export default function PlannerClientPage() {
                         </div>
                       </div>
                       <div className="summary-card">
+                        <div className="summary-label">Annual SQL capacity</div>
+                        <div className="summary-value">
+                          {formatNumber(summarySdrOutput.summary.annualCapacity)}
+                        </div>
+                      </div>
+                      <div className="summary-card">
+                        <div className="summary-label">Assigned SQL quota / year</div>
+                        <div className="summary-value">
+                          {formatNumber(summarySdrOutput.summary.annualAssignedQuota)}
+                        </div>
+                      </div>
+                      <div className="summary-card">
+                        <div className="summary-label">Annual SQL gap</div>
+                        <div className="summary-value">
+                          {formatNumber(summarySdrOutput.summary.annualGap)}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="summary-row" style={{ marginTop: 10 }}>
+                      <div className="summary-card">
                         <div className="summary-label">Pipeline from SQLs / year</div>
                         <div className="summary-value">
                           {formatCurrency(summarySdrOutput.summary.annualPipelineValue)}
@@ -1939,7 +1959,10 @@ export default function PlannerClientPage() {
                           <thead>
                             <tr>
                               <th>Month</th>
+                              <th>SQL target</th>
                               <th>SQL capacity</th>
+                              <th>Assigned quota</th>
+                              <th>Gap</th>
                               <th>Opportunities</th>
                               <th>Pipeline value</th>
                               <th>Expected revenue</th>
@@ -1954,7 +1977,10 @@ export default function PlannerClientPage() {
                                     year: '2-digit'
                                   })}
                                 </td>
+                                <td>{formatNumber(row.target)}</td>
                                 <td>{formatNumber(row.capacity)}</td>
+                                <td>{formatNumber(row.assignedQuota)}</td>
+                                <td>{formatNumber(row.gap)}</td>
                                 <td>{formatNumber(row.opportunities)}</td>
                                 <td>{formatCurrency(row.pipelineValue)}</td>
                                 <td>{formatCurrency(row.expectedRevenue)}</td>
