@@ -549,13 +549,6 @@ export default function PlannerClientPage() {
         </button>
         <button
           type="button"
-          className={activeTab === 'summary' ? 'tab active' : 'tab'}
-          onClick={() => setActiveTab('summary')}
-        >
-          Summary
-        </button>
-        <button
-          type="button"
           className={activeTab === 'sdr' ? 'tab active' : 'tab'}
           onClick={() => setActiveTab('sdr')}
         >
@@ -567,6 +560,13 @@ export default function PlannerClientPage() {
           onClick={() => setActiveTab('capacity')}
         >
           Sales Capacity
+        </button>
+        <button
+          type="button"
+          className={activeTab === 'summary' ? 'tab active' : 'tab'}
+          onClick={() => setActiveTab('summary')}
+        >
+          Summary
         </button>
         {isWorkspaceAdmin ? (
           <button
