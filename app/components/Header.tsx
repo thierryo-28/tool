@@ -32,8 +32,8 @@ export const Header: React.FC<Props> = ({
             src="/NinjaLogo.jpg"
             alt="Ninja"
             className="brand-logo"
-            width={102}
-            height={102}
+            width={153}
+            height={153}
             priority
           />
         </div>

@@ -71,11 +71,11 @@ h1 {
 .brand {
   display: flex;
   align-items: center;
-  min-height: 102px;
+  min-height: 153px;
 }
 
 .brand-logo {
-  height: 102px;
+  height: 153px;
   width: auto;
   object-fit: contain;
 }
