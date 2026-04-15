@@ -29,8 +29,8 @@ export const Header: React.FC<Props> = ({
       <div className="app-header-left">
         <div className="brand">
           <Image
-            src="/ROOM-Logo.jpg"
-            alt="ROOM"
+            src="/NinjaLogo.jpg"
+            alt="Ninja"
             className="brand-logo"
             width={102}
             height={102}
