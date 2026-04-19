@@ -72,7 +72,10 @@ export const SdrRoleAssumptionsTable: React.FC<Props> = ({
         }
         return (
           <Fragment key={role.id}>
-            <table style={{ marginTop: index > 0 ? 16 : 0 }}>
+            <table
+              className="sdr-role-assumptions-table"
+              style={{ marginTop: index > 0 ? 16 : 0 }}
+            >
               <thead>
                 <tr>
                   <th>Role</th>

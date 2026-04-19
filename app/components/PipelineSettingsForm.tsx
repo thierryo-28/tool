@@ -66,7 +66,11 @@ export const PipelineSettingsForm: React.FC<Props> = ({ value, onChange }) => {
         </div>
 
         <div className="field">
-          <label htmlFor="pp-deal-new">Average deal size (new)</label>
+          <label htmlFor="pp-deal-new">
+            Average deal size
+            <br />
+            (new)
+          </label>
           <CurrencyInput
             id="pp-deal-new"
             value={value.averageDealSizeNew}

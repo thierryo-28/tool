@@ -298,7 +298,7 @@ export default function PlannerClientPage() {
 
   type TabId =
     | 'home'
-    | 'settings'
+    | 'configure'
     | 'capacity'
     | 'sdr'
     | 'demand'
@@ -815,7 +815,12 @@ export default function PlannerClientPage() {
       if (parsed.waves) setWaves(parsed.waves);
       if (parsed.baseline) setBaseline(parsed.baseline);
       if (parsed.selectedRoles) setSelectedRoles(parsed.selectedRoles);
-      if (parsed.activeTab) setActiveTab(parsed.activeTab);
+      if (parsed.activeTab) {
+        const tabRaw = parsed.activeTab as string;
+        const normalizedTab =
+          tabRaw === 'settings' ? 'configure' : tabRaw;
+        setActiveTab(normalizedTab as TabId);
+      }
       if (parsed.demandSettings) setDemandSettings(parsed.demandSettings);
       if (parsed.pipelineSettings) setPipelineSettings(parsed.pipelineSettings);
       if (typeof parsed.showResults === 'boolean') setShowResults(parsed.showResults);
@@ -1012,10 +1017,10 @@ export default function PlannerClientPage() {
         </button>
         <button
           type="button"
-          className={activeTab === 'settings' ? 'tab active' : 'tab'}
-          onClick={() => setActiveTab('settings')}
+          className={activeTab === 'configure' ? 'tab active' : 'tab'}
+          onClick={() => setActiveTab('configure')}
         >
-          Settings
+          Configure
         </button>
         <button
           type="button"
@@ -1166,9 +1171,10 @@ export default function PlannerClientPage() {
               Revenue Planning Tools
             </h2>
             <div style={{ marginTop: 8, lineHeight: 1.45 }}>
-              Pick a planner to get started—Demand Generation, Pipeline, SDR
-              Capacity, or Sales Capacity. Each tool runs independently, and the
-              Summary tab brings everything together into a clear, shareable
+              Under Configure, create the roles per the setup of your
+              organization. Then, pick a planner —Demand Generation, Pipeline,
+              SDR Capacity, or Sales Capacity. Each tool runs independently, and
+              the Summary tab brings everything together into a clear, shareable
               view.
             </div>
           </div>
@@ -1186,9 +1192,9 @@ export default function PlannerClientPage() {
                 <button
                   type="button"
                   className="button button-secondary"
-                  onClick={() => setActiveTab('settings')}
+                  onClick={() => setActiveTab('configure')}
                 >
-                  Open Settings
+                  Open Configure
                 </button>
                 <button
                   type="button"
@@ -1250,7 +1256,7 @@ export default function PlannerClientPage() {
             </section>
           </div>
         </>
-      ) : activeTab === 'settings' ? (
+      ) : activeTab === 'configure' ? (
         <PlannerSettingsPanel
           isSignedIn={Boolean(isLoaded && userId)}
           initial={profilePlannerSettings}

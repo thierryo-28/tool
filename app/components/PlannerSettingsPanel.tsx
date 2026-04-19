@@ -9,6 +9,7 @@ import {
   type SalesRoleTemplateRow,
   type SdrRoleTemplateRow
 } from '@/lib/profilePlannerSettings';
+import { CurrencyInput } from './CurrencyInput';
 
 function blankSalesRow(): SalesRoleTemplateRow {
   return {
@@ -141,13 +142,11 @@ export const PlannerSettingsPanel: React.FC<Props> = ({
   return (
     <div className="grid" style={{ gridTemplateColumns: 'minmax(0, 1fr)' }}>
       <div className="subtitle">
-        <h2 style={{ margin: '0 0 12px', fontSize: '1.25rem' }}>
-          Personal planner settings
-        </h2>
+        <h2 style={{ margin: '0 0 12px', fontSize: '1.25rem' }}>Configure</h2>
         <p style={{ marginTop: 0, lineHeight: 1.45 }}>
-          Define default sales and SDR roles here. Save your templates, then
-          apply them to each planner tab. You can still edit every value later
-          in Sales Capacity and SDR Capacity.
+          Define your default Sales and SDR roles here. Save your templates,
+          then apply them to each planner tab. You can still edit every value
+          later in Sales Capacity and SDR Capacity.
         </p>
       </div>
 
@@ -232,19 +231,19 @@ export const PlannerSettingsPanel: React.FC<Props> = ({
                       />
                     </td>
                     <td>
-                      <input
-                        type="number"
-                        min={0}
-                        step={1000}
+                      <CurrencyInput
+                        id={`sales-template-quota-${idx.toString()}`}
                         value={row.defaultAnnualQuota}
-                        onChange={(e) => {
-                          const v = Math.max(0, Number(e.target.value) || 0);
+                        onChange={(n) => {
+                          const v = Math.max(0, n);
                           setDraft((prev) => {
                             const next = [...prev.salesTemplates];
                             next[idx] = { ...next[idx]!, defaultAnnualQuota: v };
                             return { ...prev, salesTemplates: next };
                           });
                         }}
+                        min={0}
+                        placeholder="$0"
                       />
                     </td>
                   </tr>
