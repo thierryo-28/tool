@@ -70,8 +70,11 @@ h1 {
 
 .brand {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  align-self: flex-start;
   min-height: 230px;
+  /* Nudge up so the mark lines up with the auth / title block on the right */
+  margin-top: -32px;
 }
 
 .brand-logo {
