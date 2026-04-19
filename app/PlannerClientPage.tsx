@@ -1017,6 +1017,13 @@ export default function PlannerClientPage() {
       {activeTab === 'home' ? (
         <>
           <div className="subtitle">
+            <div style={{ margin: '0 0 10px', lineHeight: 1.45 }}>
+              Revenue Ninja is your command center for smarter revenue planning.
+              From headcount and sales capacity to pipeline coverage and demand
+              generation, it gives sales leaders and RevOps teams the clarity to
+              plan faster, allocate resources confidently, and hit targets with
+              precision—no spreadsheets, no guesswork, just execution.
+            </div>
             <h2 style={{ margin: 0, fontSize: '1.25rem' }}>
               Revenue Planning Tools
             </h2>
