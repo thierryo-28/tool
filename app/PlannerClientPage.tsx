@@ -1028,10 +1028,10 @@ export default function PlannerClientPage() {
               Revenue Planning Tools
             </h2>
             <div style={{ marginTop: 8, lineHeight: 1.45 }}>
-              Choose a planner to start: Demand Generation, Pipeline Planner, SDR
-              Capacity, or Sales Capacity. Each planning tool works
-              independently. Use the Summary tab to generate a consolidated and
-              shareable view.
+              Pick a planner to get started—Demand Generation, Pipeline, SDR
+              Capacity, or Sales Capacity. Each tool runs independently, and the
+              Summary tab brings everything together into a clear, shareable
+              view.2
             </div>
           </div>
           <div className="grid">
