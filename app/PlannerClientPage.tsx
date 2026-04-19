@@ -1031,7 +1031,7 @@ export default function PlannerClientPage() {
               Pick a planner to get started—Demand Generation, Pipeline, SDR
               Capacity, or Sales Capacity. Each tool runs independently, and the
               Summary tab brings everything together into a clear, shareable
-              view.2
+              view.
             </div>
           </div>
           <div className="grid">
