@@ -93,3 +93,15 @@ create index if not exists workspace_invites_workspace_status_idx
 create unique index if not exists workspace_invites_pending_unique
   on workspace_invites (workspace_id, lower(email))
   where status = 'pending';
+
+-- Per-user planner defaults (Sales / SDR role templates), global to the profile.
+create table if not exists profile_planner_settings (
+  profile_id uuid primary key references profiles(id) on delete cascade,
+  settings jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists profile_planner_settings_updated_idx
+  on profile_planner_settings (updated_at desc);
+
+

@@ -13,7 +13,6 @@ import {
   HiringWave,
   RoleAssumption,
   BaselineHeadcount,
-  RoleId,
   SelectedRoles,
   DemandSettings,
   DemandOutput,
@@ -51,9 +50,23 @@ import {
 } from '@/lib/remoteSavedViews';
 import {
   mergePlannerGlobals,
+  normalizeSdrViewPayload,
   plannerGlobalsFromSettings,
   type TabViewPayload
 } from '@/lib/plannerViewPayloads';
+import {
+  salesRolesFromTemplates,
+  sdrRolesFromTemplates,
+  selectedRolesForIds,
+  zeroBaselinesForIds
+} from '@/lib/plannerFromProfileTemplates';
+import {
+  emptyProfilePlannerSettings,
+  type ProfilePlannerSettings,
+  type SalesRoleTemplateRow,
+  type SdrRoleTemplateRow
+} from '@/lib/profilePlannerSettings';
+import { PlannerSettingsPanel } from './components/PlannerSettingsPanel';
 
 /** Jan 1 of the current calendar year (UTC noon so YYYY-MM-DD stays correct in every TZ). */
 function firstDayOfCurrentYearIso(): string {
@@ -165,10 +178,18 @@ function defaultSdrRole(): SdrRoleAssumption {
   };
 }
 
+function defaultSdrRoles(): SdrRoleAssumption[] {
+  return [defaultSdrRole()];
+}
+
+function defaultSdrBaselines(): Record<string, number> {
+  return { SDR: 4 };
+}
+
 function defaultSdrWaves(): SdrHiringWave[] {
   const now = new Date();
   const feb = new Date(now.getFullYear(), 1, 1).toISOString();
-  return [{ count: 2, startDate: feb }];
+  return [{ roleId: 'SDR', count: 2, startDate: feb }];
 }
 
 function defaultSdrPipelineAssumptions(): SdrPipelineAssumptions {
@@ -277,6 +298,7 @@ export default function PlannerClientPage() {
 
   type TabId =
     | 'home'
+    | 'settings'
     | 'capacity'
     | 'sdr'
     | 'demand'
@@ -294,13 +316,16 @@ export default function PlannerClientPage() {
   );
 
   const [sdrSettings, setSdrSettings] = useState<GlobalSettings>(defaultSdrSettings);
-  const [sdrRole, setSdrRole] = useState<SdrRoleAssumption>(defaultSdrRole);
+  const [sdrRoles, setSdrRoles] = useState<SdrRoleAssumption[]>(defaultSdrRoles);
   const [sdrWaves, setSdrWaves] = useState<SdrHiringWave[]>(defaultSdrWaves);
-  const [sdrBaseline, setSdrBaseline] = useState(4);
+  const [sdrBaselines, setSdrBaselines] =
+    useState<Record<string, number>>(defaultSdrBaselines);
   const [sdrPipeline, setSdrPipeline] = useState<SdrPipelineAssumptions>(() =>
     defaultSdrPipelineAssumptions()
   );
   const [sdrShowResults, setSdrShowResults] = useState(false);
+  const [profilePlannerSettings, setProfilePlannerSettings] =
+    useState<ProfilePlannerSettings | null>(null);
   const [summarySelections, setSummarySelections] = useState<SummarySelections>({
     demand: '',
     pipeline: '',
@@ -343,6 +368,35 @@ export default function PlannerClientPage() {
     useState<CapacityOutput | null>(null);
 
   const isWorkspaceAdmin = workspaceAccessRole === 'admin';
+
+  useEffect(() => {
+    if (!isLoaded || !userId) {
+      setProfilePlannerSettings(null);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch('/api/profile-planner-settings');
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          settings?: ProfilePlannerSettings;
+        };
+        if (!cancelled) {
+          setProfilePlannerSettings(
+            data.settings ?? emptyProfilePlannerSettings()
+          );
+        }
+      } catch {
+        if (!cancelled) {
+          setProfilePlannerSettings(emptyProfilePlannerSettings());
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoaded, userId]);
 
   const formatCurrency = (n: number): string =>
     `$${Math.round(n).toLocaleString()}`;
@@ -565,12 +619,13 @@ export default function PlannerClientPage() {
       pipelineGlobal,
       pipelinePayload.pipelineSettings
     );
+    const sdrNorm = normalizeSdrViewPayload(sdrPayload);
     const nextSdr = calculateSdrCapacity(
-      sdrPayload.settings,
-      sdrPayload.sdrRole,
-      sdrPayload.sdrWaves,
-      sdrPayload.sdrBaseline,
-      sdrPayload.sdrPipeline ?? defaultSdrPipelineAssumptions()
+      sdrNorm.settings,
+      sdrNorm.sdrRoles,
+      sdrNorm.sdrWaves,
+      sdrNorm.sdrBaselines,
+      sdrNorm.sdrPipeline ?? defaultSdrPipelineAssumptions()
     );
     const nextCapacity = calculateCapacity(
       capacityPayload.settings,
@@ -629,12 +684,12 @@ export default function PlannerClientPage() {
   );
 
   const activeBaseline = useMemo(() => {
-    const next: BaselineHeadcount = {
-      AE: selectedRoles.AE ? baseline.AE : 0,
-      AM: selectedRoles.AM ? baseline.AM : 0
-    };
+    const next: BaselineHeadcount = {};
+    roles.forEach((r) => {
+      next[r.id] = selectedRoles[r.id] ? (baseline[r.id] ?? 0) : 0;
+    });
     return next;
-  }, [baseline, selectedRoles]);
+  }, [baseline, selectedRoles, roles]);
 
   const data: CapacityOutput | null = useMemo(() => {
     if (!showResults) return null;
@@ -645,23 +700,64 @@ export default function PlannerClientPage() {
     if (!sdrShowResults) return null;
     return calculateSdrCapacity(
       sdrSettings,
-      sdrRole,
+      sdrRoles,
       sdrWaves,
-      sdrBaseline,
+      sdrBaselines,
       sdrPipeline
     );
-  }, [sdrSettings, sdrRole, sdrWaves, sdrBaseline, sdrPipeline, sdrShowResults]);
+  }, [sdrSettings, sdrRoles, sdrWaves, sdrBaselines, sdrPipeline, sdrShowResults]);
 
   const handleActiveRolesChange = (updatedActive: RoleAssumption[]) => {
     setRoles((prev) => {
-      const byId = new Map<RoleId, RoleAssumption>(
+      const byId = new Map<string, RoleAssumption>(
         updatedActive.map((r) => [r.id, r])
       );
       return prev.map((r) => byId.get(r.id) ?? r);
     });
   };
 
-  const toggleRole = (roleId: RoleId) => {
+  const handleSdrRolesChange = (nextRoles: SdrRoleAssumption[]) => {
+    setSdrRoles(nextRoles);
+    const ids = new Set(nextRoles.map((r) => r.id));
+    setSdrBaselines((prev) => {
+      const out: Record<string, number> = {};
+      nextRoles.forEach((r) => {
+        out[r.id] = prev[r.id] ?? 0;
+      });
+      return out;
+    });
+    setSdrWaves((prev) =>
+      prev
+        .map((w) =>
+          ids.has(w.roleId) ? w : { ...w, roleId: nextRoles[0]?.id ?? w.roleId }
+        )
+        .filter((w) => ids.has(w.roleId))
+    );
+  };
+
+  const handleApplySalesFromTemplates = (templates: SalesRoleTemplateRow[]) => {
+    const nextRoles = salesRolesFromTemplates(templates);
+    setRoles(nextRoles);
+    setSelectedRoles(selectedRolesForIds(nextRoles.map((r) => r.id)));
+    setBaseline(zeroBaselinesForIds(nextRoles.map((r) => r.id)));
+    setWaves([]);
+    setShowResults(false);
+  };
+
+  const handleApplySdrFromTemplates = (templates: SdrRoleTemplateRow[]) => {
+    const next = sdrRolesFromTemplates(templates);
+    const feb = new Date(new Date().getFullYear(), 1, 1).toISOString();
+    setSdrRoles(next);
+    setSdrBaselines(zeroBaselinesForIds(next.map((r) => r.id)));
+    setSdrWaves(
+      next.length > 0
+        ? [{ roleId: next[0]!.id, count: 2, startDate: feb }]
+        : []
+    );
+    setSdrShowResults(false);
+  };
+
+  const toggleRole = (roleId: string) => {
     setSelectedRoles((prev) => {
       const nextSelected = !prev[roleId];
 
@@ -706,8 +802,10 @@ export default function PlannerClientPage() {
         pipelineSettings?: PipelineSettings;
         showResults?: boolean;
         sdrSettings?: GlobalSettings;
+        sdrRoles?: SdrRoleAssumption[];
         sdrRole?: SdrRoleAssumption;
         sdrWaves?: SdrHiringWave[];
+        sdrBaselines?: Record<string, number>;
         sdrBaseline?: number;
         sdrPipeline?: SdrPipelineAssumptions;
         sdrShowResults?: boolean;
@@ -722,12 +820,38 @@ export default function PlannerClientPage() {
       if (parsed.pipelineSettings) setPipelineSettings(parsed.pipelineSettings);
       if (typeof parsed.showResults === 'boolean') setShowResults(parsed.showResults);
       if (parsed.sdrSettings) setSdrSettings(parsed.sdrSettings);
-      if (parsed.sdrRole) setSdrRole(parsed.sdrRole);
-      if (parsed.sdrWaves) setSdrWaves(parsed.sdrWaves);
-      if (typeof parsed.sdrBaseline === 'number') setSdrBaseline(parsed.sdrBaseline);
-      if (parsed.sdrPipeline) setSdrPipeline(parsed.sdrPipeline);
-      if (typeof parsed.sdrShowResults === 'boolean')
-        setSdrShowResults(parsed.sdrShowResults);
+      if (
+        parsed.sdrSettings ||
+        parsed.sdrRoles ||
+        parsed.sdrRole ||
+        parsed.sdrWaves ||
+        typeof parsed.sdrBaseline === 'number' ||
+        parsed.sdrBaselines ||
+        parsed.sdrPipeline ||
+        typeof parsed.sdrShowResults === 'boolean'
+      ) {
+        try {
+          const n = normalizeSdrViewPayload({
+            kind: 'sdr',
+            settings: parsed.sdrSettings ?? defaultSdrSettings(),
+            sdrRoles: parsed.sdrRoles,
+            sdrRole: parsed.sdrRole,
+            sdrWaves: parsed.sdrWaves ?? [],
+            sdrBaselines: parsed.sdrBaselines,
+            sdrBaseline: parsed.sdrBaseline,
+            sdrPipeline: parsed.sdrPipeline,
+            showResults: Boolean(parsed.sdrShowResults)
+          });
+          setSdrSettings(n.settings);
+          setSdrRoles(n.sdrRoles);
+          setSdrWaves(n.sdrWaves);
+          setSdrBaselines(n.sdrBaselines);
+          setSdrPipeline(n.sdrPipeline ?? defaultSdrPipelineAssumptions());
+          setSdrShowResults(n.showResults);
+        } catch {
+          // ignore invalid SDR block
+        }
+      }
     } catch {
       // ignore malformed view
     } finally {
@@ -747,9 +871,9 @@ export default function PlannerClientPage() {
       demandSettings,
       pipelineSettings,
       sdrSettings,
-      sdrRole,
+      sdrRoles,
       sdrWaves,
-      sdrBaseline,
+      sdrBaselines,
       sdrPipeline,
       sdrShowResults
     };
@@ -815,18 +939,26 @@ export default function PlannerClientPage() {
       };
     }
     if (activeTab === 'sdr') {
+      const baselines: Record<string, number> = {};
+      sdrRoles.forEach((r) => {
+        const v = sdrBaselines[r.id];
+        baselines[r.id] =
+          typeof v === 'number' && Number.isFinite(v)
+            ? Math.max(0, Math.round(v))
+            : 0;
+      });
       return {
         kind: 'sdr',
         settings: sdrSettings,
-        sdrRole,
+        sdrRoles,
         sdrWaves: sdrWaves.map((w) => ({
           ...w,
           count: Math.max(0, Math.round(w.count)),
           startDate: normalizeMonthIso(w.startDate)
         })),
-        sdrBaseline: Math.max(0, Math.round(sdrBaseline)),
+        sdrBaselines: baselines,
         sdrPipeline,
-        showResults: sdrShowResults
+        showResults: sdrShowResults ?? false
       };
     }
     throw new Error('Named views are only available on planner tabs.');
@@ -848,14 +980,13 @@ export default function PlannerClientPage() {
       return;
     }
     if (payload.kind === 'sdr') {
-      setSdrSettings(payload.settings);
-      setSdrRole(payload.sdrRole);
-      setSdrWaves(payload.sdrWaves);
-      setSdrBaseline(payload.sdrBaseline);
-      setSdrPipeline(
-        payload.sdrPipeline ?? defaultSdrPipelineAssumptions()
-      );
-      setSdrShowResults(payload.showResults);
+      const n = normalizeSdrViewPayload(payload);
+      setSdrSettings(n.settings);
+      setSdrRoles(n.sdrRoles);
+      setSdrWaves(n.sdrWaves);
+      setSdrBaselines(n.sdrBaselines);
+      setSdrPipeline(n.sdrPipeline ?? defaultSdrPipelineAssumptions());
+      setSdrShowResults(n.showResults);
       return;
     }
     setSettings((s) => mergePlannerGlobals(s, payload.globals));
@@ -878,6 +1009,13 @@ export default function PlannerClientPage() {
           onClick={() => setActiveTab('home')}
         >
           Home
+        </button>
+        <button
+          type="button"
+          className={activeTab === 'settings' ? 'tab active' : 'tab'}
+          onClick={() => setActiveTab('settings')}
+        >
+          Settings
         </button>
         <button
           type="button"
@@ -1048,6 +1186,13 @@ export default function PlannerClientPage() {
                 <button
                   type="button"
                   className="button button-secondary"
+                  onClick={() => setActiveTab('settings')}
+                >
+                  Open Settings
+                </button>
+                <button
+                  type="button"
+                  className="button button-secondary"
                   onClick={() => setActiveTab('demand')}
                 >
                   Open Demand Generation
@@ -1105,6 +1250,14 @@ export default function PlannerClientPage() {
             </section>
           </div>
         </>
+      ) : activeTab === 'settings' ? (
+        <PlannerSettingsPanel
+          isSignedIn={Boolean(isLoaded && userId)}
+          initial={profilePlannerSettings}
+          onApplySales={handleApplySalesFromTemplates}
+          onApplySdr={handleApplySdrFromTemplates}
+          onSaved={setProfilePlannerSettings}
+        />
       ) : activeTab === 'sdr' ? (
         <div className="grid">
           <section className="panel">
@@ -1138,34 +1291,32 @@ export default function PlannerClientPage() {
                 SDR productivity
               </div>
             </div>
-            <SdrRoleAssumptionsTable value={sdrRole} onChange={setSdrRole} />
+            <SdrRoleAssumptionsTable
+              roles={sdrRoles}
+              onChange={handleSdrRolesChange}
+            />
 
             <div style={{ marginTop: 14 }}>
               <div className="panel-subtitle" style={{ marginBottom: 8 }}>
-                Existing SDRs at fiscal start
+                Existing reps at fiscal start (by role)
               </div>
             </div>
-            <div className="field-grid">
-              <div className="field">
-                <label htmlFor="sdr-baseline">SDR headcount at start</label>
-                <input
-                  id="sdr-baseline"
-                  type="number"
-                  min={0}
-                  value={sdrBaseline}
-                  onChange={(e) =>
-                    setSdrBaseline(Number(e.target.value) || 0)
-                  }
-                />
-              </div>
-            </div>
+            <BaselineForm
+              roles={sdrRoles as unknown as RoleAssumption[]}
+              value={sdrBaselines}
+              onChange={setSdrBaselines}
+            />
 
             <div style={{ marginTop: 14 }}>
               <div className="panel-subtitle" style={{ marginBottom: 8 }}>
                 Hiring plan
               </div>
             </div>
-            <SdrHiringPlanTable value={sdrWaves} onChange={setSdrWaves} />
+            <SdrHiringPlanTable
+              roleOptions={sdrRoles.map((r) => ({ id: r.id, name: r.name }))}
+              value={sdrWaves}
+              onChange={setSdrWaves}
+            />
 
             <div className="button-row no-print">
               <button
@@ -1191,7 +1342,8 @@ export default function PlannerClientPage() {
             <ResultsSummary data={sdrData} variant="sql" />
             <ResultsTable
               data={sdrData}
-              roleIds={['SDR']}
+              roleIds={sdrRoles.map((r) => r.id)}
+              roleHeadcountLabels={sdrRoles.map((r) => `${r.name} HC`)}
               variant="sql"
             />
           </section>
@@ -1231,22 +1383,16 @@ export default function PlannerClientPage() {
 
           <div className="role-toggle-row no-print" aria-label="Role selection">
             <span className="role-toggle-label">Roles</span>
-            <label className="role-toggle">
-              <input
-                type="checkbox"
-                checked={selectedRoles.AE}
-                onChange={() => toggleRole('AE')}
-              />
-              <span>AE</span>
-            </label>
-            <label className="role-toggle">
-              <input
-                type="checkbox"
-                checked={selectedRoles.AM}
-                onChange={() => toggleRole('AM')}
-              />
-              <span>AM</span>
-            </label>
+            {roles.map((r) => (
+              <label className="role-toggle" key={r.id}>
+                <input
+                  type="checkbox"
+                  checked={Boolean(selectedRoles[r.id])}
+                  onChange={() => toggleRole(r.id)}
+                />
+                <span>{r.name}</span>
+              </label>
+            ))}
           </div>
 
           <GlobalSettingsForm value={settings} onChange={setSettings} />
@@ -1290,7 +1436,11 @@ export default function PlannerClientPage() {
           </div>
 
             <ResultsSummary data={data} />
-            <ResultsTable data={data} roleIds={activeRoles.map((r) => r.id)} />
+            <ResultsTable
+              data={data}
+              roleIds={activeRoles.map((r) => r.id)}
+              roleHeadcountLabels={activeRoles.map((r) => `${r.name} HC`)}
+            />
           </section>
         </div>
       ) : activeTab === 'demand' ? (

@@ -3,7 +3,9 @@ import type { CapacityOutput, SdrCapacityOutput } from '@/lib/types';
 
 interface Props {
   data: CapacityOutput | SdrCapacityOutput | null;
-  roleIds: (string)[];
+  roleIds: string[];
+  /** Optional column headers aligned with `roleIds` (defaults to role id). */
+  roleHeadcountLabels?: string[];
   /** Reserved for future header tweaks; values are always numeric. */
   variant?: 'currency' | 'sql';
 }
@@ -38,6 +40,7 @@ function isSdrPipelineData(
 export const ResultsTable: React.FC<Props> = ({
   data,
   roleIds,
+  roleHeadcountLabels,
   variant = 'currency'
 }) => {
   const targetLabel = variant === 'sql' ? 'Target (SQL)' : 'Target';
@@ -47,6 +50,8 @@ export const ResultsTable: React.FC<Props> = ({
 
   const baseCols = showPipelineCols ? 7 : 5;
   const totalCols = baseCols + roleIds.length;
+  const hcLabel = (idx: number, roleId: string) =>
+    roleHeadcountLabels?.[idx] ?? `${roleId} HC`;
 
   if (!data) {
     return (
@@ -65,8 +70,8 @@ export const ResultsTable: React.FC<Props> = ({
                   <th>Expected revenue ($)</th>
                 </>
               ) : null}
-              {roleIds.map((roleId) => (
-                <th key={roleId}>{roleId} HC</th>
+              {roleIds.map((roleId, idx) => (
+                <th key={roleId}>{hcLabel(idx, roleId)}</th>
               ))}
             </tr>
           </thead>

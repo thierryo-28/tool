@@ -9,7 +9,7 @@ interface Props {
 
 export const BaselineForm: React.FC<Props> = ({ roles, value, onChange }) => {
   const handleChange =
-    (roleId: keyof BaselineHeadcount) =>
+    (roleId: string) =>
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const next: BaselineHeadcount = {
         ...value,

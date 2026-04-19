@@ -1,8 +1,9 @@
-export type RoleId = 'AE' | 'AM';
-export type SelectedRoles = Record<RoleId, boolean>;
+/** Stable id for a sales capacity role (e.g. AE, AM, SR0). */
+export type CapacityRoleId = string;
+export type SelectedRoles = Record<string, boolean>;
 
 export interface RoleAssumption {
-  id: RoleId;
+  id: CapacityRoleId;
   name: string;
   annualQuota: number;
   rampMonths: number;
@@ -11,12 +12,12 @@ export interface RoleAssumption {
 }
 
 export interface HiringWave {
-  roleId: RoleId;
+  roleId: CapacityRoleId;
   count: number;
   startDate: string;
 }
 
-export type BaselineHeadcount = Record<RoleId, number>;
+export type BaselineHeadcount = Record<string, number>;
 
 export interface GlobalSettings {
   fiscalYearStart: string;
@@ -42,11 +43,11 @@ export interface MonthlyResult {
   capacity: number;
   assignedQuota: number;
   gap: number;
-  byRole: Partial<Record<RoleId, MonthlyRoleCapacity>>;
+  byRole: Partial<Record<string, MonthlyRoleCapacity>>;
 }
 
 export interface CapacitySummary {
-  totalHeadcount: Partial<Record<RoleId, number>>;
+  totalHeadcount: Partial<Record<string, number>>;
   annualTarget: number;
   annualCapacity: number;
   annualAssignedQuota: number;
@@ -59,7 +60,7 @@ export interface CapacityOutput {
 }
 
 /** SDR Capacity tab: org target and per-rep quota are measured in SQLs per year. */
-export type SdrRoleId = 'SDR';
+export type SdrRoleId = string;
 
 export interface SdrRoleAssumption {
   id: SdrRoleId;
@@ -72,6 +73,7 @@ export interface SdrRoleAssumption {
 }
 
 export interface SdrHiringWave {
+  roleId: SdrRoleId;
   count: number;
   startDate: string;
 }
@@ -93,7 +95,7 @@ export interface SdrMonthlyResult {
   capacity: number;
   assignedQuota: number;
   gap: number;
-  byRole: Record<SdrRoleId, MonthlyRoleCapacity>;
+  byRole: Record<string, MonthlyRoleCapacity>;
   /** Qualified opps / month from capacity × SQL→opp %. */
   opportunities: number;
   /** opportunities × average opportunity size ($). */
@@ -103,7 +105,7 @@ export interface SdrMonthlyResult {
 }
 
 export interface SdrCapacitySummary {
-  totalHeadcount: Record<SdrRoleId, number>;
+  totalHeadcount: Record<string, number>;
   annualTarget: number;
   annualCapacity: number;
   annualAssignedQuota: number;

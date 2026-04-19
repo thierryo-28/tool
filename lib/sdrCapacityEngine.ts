@@ -4,8 +4,7 @@ import {
   SdrHiringWave,
   SdrMonthlyResult,
   SdrPipelineAssumptions,
-  SdrRoleAssumption,
-  SdrRoleId
+  SdrRoleAssumption
 } from './types';
 import { seasonalMonthlyTargets } from './capacityEngine';
 
@@ -38,23 +37,33 @@ function getAttritionDiscount(annualAttritionPct: number): number {
   return 1 - annualAttritionPct / 2;
 }
 
-const SDR_ID: SdrRoleId = 'SDR';
-
 function pctToUnit(p: number): number {
   if (!Number.isFinite(p)) return 0;
   return Math.min(1, Math.max(0, p / 100));
 }
 
+function emptyByRole(
+  roleIds: string[]
+): Record<string, { headcount: number; capacity: number }> {
+  const byRole: Record<string, { headcount: number; capacity: number }> = {};
+  roleIds.forEach((id) => {
+    byRole[id] = { headcount: 0, capacity: 0 };
+  });
+  return byRole;
+}
+
 export function calculateSdrCapacity(
   settings: GlobalSettings,
-  role: SdrRoleAssumption,
+  roles: SdrRoleAssumption[],
   waves: SdrHiringWave[],
-  baselineSdr: number,
+  baselines: Record<string, number>,
   pipeline: SdrPipelineAssumptions
 ): SdrCapacityOutput {
   const months = buildMonthGrid(settings);
   const monthCount = months.length;
   const monthlyTargets = seasonalMonthlyTargets(settings, monthCount);
+  const roleIds = roles.map((r) => r.id);
+  const roleById = new Map(roles.map((r) => [r.id, r] as const));
 
   const sqlToOpp = pctToUnit(pipeline.sqlToOpportunityPct);
   const winRate = pctToUnit(pipeline.opportunityToWonPct);
@@ -66,15 +75,16 @@ export function calculateSdrCapacity(
     capacity: 0,
     assignedQuota: 0,
     gap: 0,
-    byRole: {
-      SDR: { headcount: 0, capacity: 0 }
-    },
+    byRole: emptyByRole(roleIds),
     opportunities: 0,
     pipelineValue: 0,
     expectedRevenue: 0
   }));
 
   waves.forEach((wave) => {
+    const role = roleById.get(wave.roleId);
+    if (!role) return;
+
     const startIndex = findMonthIndex(months, wave.startDate);
     if (startIndex === -1) return;
 
@@ -97,28 +107,36 @@ export function calculateSdrCapacity(
         baseMonthlyQuota * rampFactor * wave.count * attritionDiscount;
 
       const result = monthlyResults[monthIdx];
-      const roleBucket = result.byRole[SDR_ID];
+      const roleBucket = result.byRole[wave.roleId];
+      if (!roleBucket) continue;
+
       roleBucket.capacity += repCapacity;
       roleBucket.headcount += wave.count;
       result.capacity += repCapacity;
     }
   });
 
-  if (baselineSdr > 0) {
+  Object.entries(baselines).forEach(([roleId, count]) => {
+    if (!count || count <= 0) return;
+    const role = roleById.get(roleId);
+    if (!role) return;
+
     const baseMonthlyQuota = role.annualQuota / 12;
     const attritionDiscount = getAttritionDiscount(role.annualAttritionPct);
 
     for (let monthIdx = 0; monthIdx < monthCount; monthIdx += 1) {
       const repCapacity =
-        baseMonthlyQuota * 1 * baselineSdr * attritionDiscount;
+        baseMonthlyQuota * 1 * count * attritionDiscount;
 
       const result = monthlyResults[monthIdx];
-      const roleBucket = result.byRole[SDR_ID];
+      const roleBucket = result.byRole[roleId];
+      if (!roleBucket) continue;
+
       roleBucket.capacity += repCapacity;
-      roleBucket.headcount += baselineSdr;
+      roleBucket.headcount += count;
       result.capacity += repCapacity;
     }
-  }
+  });
 
   monthlyResults.forEach((result) => {
     result.assignedQuota = result.capacity * (1 + settings.overAssignmentPct);
@@ -130,7 +148,10 @@ export function calculateSdrCapacity(
     result.expectedRevenue = opps * winRate * acv;
   });
 
-  const summaryHeadcount: Record<SdrRoleId, number> = { SDR: 0 };
+  const summaryHeadcount: Record<string, number> = {};
+  roleIds.forEach((id) => {
+    summaryHeadcount[id] = 0;
+  });
 
   let annualCapacity = 0;
   let annualAssignedQuota = 0;
@@ -144,7 +165,9 @@ export function calculateSdrCapacity(
     annualOpportunities += result.opportunities;
     annualPipelineValue += result.pipelineValue;
     annualExpectedRevenue += result.expectedRevenue;
-    summaryHeadcount[SDR_ID] = result.byRole[SDR_ID]?.headcount ?? 0;
+    roleIds.forEach((id) => {
+      summaryHeadcount[id] = result.byRole[id]?.headcount ?? 0;
+    });
   });
 
   const summary = {

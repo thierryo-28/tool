@@ -3,7 +3,6 @@ import {
   RoleAssumption,
   HiringWave,
   CapacityOutput,
-  RoleId,
   MonthlyResult,
   MonthlyRoleCapacity,
   BaselineHeadcount
@@ -70,7 +69,7 @@ function getAttritionDiscount(annualAttritionPct: number): number {
   return 1 - annualAttritionPct / 2;
 }
 
-function initializeRoleIds(roles: RoleAssumption[]): RoleId[] {
+function initializeRoleIds(roles: RoleAssumption[]): string[] {
   return roles.map((r) => r.id);
 }
 
@@ -86,7 +85,7 @@ export function calculateCapacity(
   const roleIds = initializeRoleIds(roles);
 
   const monthlyResults: MonthlyResult[] = months.map((month, idx) => {
-    const byRole: Partial<Record<RoleId, MonthlyRoleCapacity>> = {};
+    const byRole: Partial<Record<string, MonthlyRoleCapacity>> = {};
     roleIds.forEach((roleId) => {
       byRole[roleId] = { headcount: 0, capacity: 0 };
     });
@@ -101,7 +100,7 @@ export function calculateCapacity(
     };
   });
 
-  const roleById = new Map<RoleId, RoleAssumption>();
+  const roleById = new Map<string, RoleAssumption>();
   roles.forEach((role) => {
     roleById.set(role.id, role);
   });
@@ -147,7 +146,7 @@ export function calculateCapacity(
     const monthsArr = months;
     const monthCountLocal = monthCount;
     Object.entries(baseline).forEach(([roleKey, count]) => {
-      const roleId = roleKey as RoleId;
+      const roleId = roleKey;
       if (!count || count <= 0) return;
       const role = roleById.get(roleId);
       if (!role) return;
@@ -175,7 +174,7 @@ export function calculateCapacity(
     result.gap = result.assignedQuota - result.target;
   });
 
-  const summaryHeadcount: Partial<Record<RoleId, number>> = {};
+  const summaryHeadcount: Partial<Record<string, number>> = {};
 
   let annualCapacity = 0;
   let annualAssignedQuota = 0;

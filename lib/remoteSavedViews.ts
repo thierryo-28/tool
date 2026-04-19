@@ -57,9 +57,14 @@ export async function saveRemoteNamedView(
   const json = (await res.json()) as {
     view?: SavedViewRecord;
     error?: string;
+    details?: unknown;
   };
   if (!res.ok || !json.view) {
-    throw new Error(json.error ?? 'Could not save shared view.');
+    const detailSuffix =
+      json.details !== undefined
+        ? ` ${typeof json.details === 'string' ? json.details : JSON.stringify(json.details)}`
+        : '';
+    throw new Error((json.error ?? 'Could not save shared view.') + detailSuffix);
   }
   return json.view;
 }
