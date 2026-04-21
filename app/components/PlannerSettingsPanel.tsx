@@ -160,9 +160,16 @@ export const PlannerSettingsPanel: React.FC<Props> = ({
             </div>
           </div>
         </div>
-        <div className="field-grid" style={{ marginBottom: 12 }}>
-          <div className="field">
-            <label htmlFor="sales-role-count">Number of sales roles</label>
+        <div className="field" style={{ marginBottom: 12 }}>
+          <label htmlFor="sales-role-count">Number of sales roles</label>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              flexWrap: 'wrap'
+            }}
+          >
             <input
               id="sales-role-count"
               type="number"
@@ -170,14 +177,18 @@ export const PlannerSettingsPanel: React.FC<Props> = ({
               max={MAX_SALES_TEMPLATE_ROLES}
               value={salesCountInput}
               onChange={(e) => setSalesCountInput(e.target.value)}
-              style={{ width: '30%', boxSizing: 'border-box' }}
+              style={{
+                width: '30%',
+                maxWidth: '7.5rem',
+                minWidth: '3.25rem',
+                boxSizing: 'border-box',
+                flexShrink: 0
+              }}
             />
-          </div>
-          <div className="field" style={{ alignSelf: 'end' }}>
             <button
               type="button"
               className="button button-secondary button-small"
-              style={{ width: 'fit-content' }}
+              style={{ width: 'fit-content', flexShrink: 0 }}
               onClick={generateSalesRows}
             >
               Generate fields
@@ -278,9 +289,16 @@ export const PlannerSettingsPanel: React.FC<Props> = ({
             </div>
           </div>
         </div>
-        <div className="field-grid" style={{ marginBottom: 12 }}>
-          <div className="field">
-            <label htmlFor="sdr-role-count">Number of SDR roles</label>
+        <div className="field" style={{ marginBottom: 12 }}>
+          <label htmlFor="sdr-role-count">Number of SDR roles</label>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              flexWrap: 'wrap'
+            }}
+          >
             <input
               id="sdr-role-count"
               type="number"
@@ -288,14 +306,18 @@ export const PlannerSettingsPanel: React.FC<Props> = ({
               max={MAX_SDR_TEMPLATE_ROLES}
               value={sdrCountInput}
               onChange={(e) => setSdrCountInput(e.target.value)}
-              style={{ width: '30%', boxSizing: 'border-box' }}
+              style={{
+                width: '30%',
+                maxWidth: '7.5rem',
+                minWidth: '3.25rem',
+                boxSizing: 'border-box',
+                flexShrink: 0
+              }}
             />
-          </div>
-          <div className="field" style={{ alignSelf: 'end' }}>
             <button
               type="button"
               className="button button-secondary button-small"
-              style={{ width: 'fit-content' }}
+              style={{ width: 'fit-content', flexShrink: 0 }}
               onClick={generateSdrRows}
             >
               Generate fields
