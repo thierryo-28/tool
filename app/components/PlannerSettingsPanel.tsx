@@ -153,10 +153,10 @@ export const PlannerSettingsPanel: React.FC<Props> = ({
       <section className="panel">
         <div className="panel-header">
           <div>
-            <div className="panel-title">Sales capacity defaults</div>
+            <div className="panel-title">Set default values for Sales roles</div>
             <div className="panel-subtitle">
-              Up to {MAX_SALES_TEMPLATE_ROLES} roles — title, ramp (months),
-              annual quota target ($)
+              Enter up to {MAX_SALES_TEMPLATE_ROLES} roles — job title, ramp
+              (months), annual quota target ($)
             </div>
           </div>
         </div>
@@ -170,12 +170,14 @@ export const PlannerSettingsPanel: React.FC<Props> = ({
               max={MAX_SALES_TEMPLATE_ROLES}
               value={salesCountInput}
               onChange={(e) => setSalesCountInput(e.target.value)}
+              style={{ width: '30%', boxSizing: 'border-box' }}
             />
           </div>
           <div className="field" style={{ alignSelf: 'end' }}>
             <button
               type="button"
-              className="button button-secondary"
+              className="button button-secondary button-small"
+              style={{ width: 'fit-content' }}
               onClick={generateSalesRows}
             >
               Generate fields
@@ -267,10 +269,12 @@ export const PlannerSettingsPanel: React.FC<Props> = ({
       <section className="panel">
         <div className="panel-header">
           <div>
-            <div className="panel-title">SDR capacity defaults</div>
+            <div className="panel-title">
+              Set default values for Business Development Roles
+            </div>
             <div className="panel-subtitle">
-              Up to {MAX_SDR_TEMPLATE_ROLES} roles — title, ramp (months), default
-              annual SQL quota per rep
+              Enter up to {MAX_SDR_TEMPLATE_ROLES} roles — job title, ramp
+              (months), annual SQL quota
             </div>
           </div>
         </div>
@@ -284,12 +288,14 @@ export const PlannerSettingsPanel: React.FC<Props> = ({
               max={MAX_SDR_TEMPLATE_ROLES}
               value={sdrCountInput}
               onChange={(e) => setSdrCountInput(e.target.value)}
+              style={{ width: '30%', boxSizing: 'border-box' }}
             />
           </div>
           <div className="field" style={{ alignSelf: 'end' }}>
             <button
               type="button"
-              className="button button-secondary"
+              className="button button-secondary button-small"
+              style={{ width: 'fit-content' }}
               onClick={generateSdrRows}
             >
               Generate fields
