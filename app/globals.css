@@ -93,6 +93,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
+  background: rgb(38, 124, 168);
 }
 
 .site-footer-logo-img {
@@ -100,6 +101,7 @@ body {
   height: 100px;
   max-width: min(200px, 70vw);
   object-fit: contain;
+  mix-blend-mode: multiply;
 }
 
 main {
