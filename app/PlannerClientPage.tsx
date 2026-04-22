@@ -1041,7 +1041,7 @@ export default function PlannerClientPage() {
           className={activeTab === 'sdr' ? 'tab active' : 'tab'}
           onClick={() => setActiveTab('sdr')}
         >
-          SDR Capacity
+          Biz Dev capacity
         </button>
         <button
           type="button"
@@ -1173,9 +1173,9 @@ export default function PlannerClientPage() {
             <div style={{ marginTop: 8, lineHeight: 1.45 }}>
               Under Configure, create the roles per the setup of your
               organization. Then, pick a planner —Demand Generation, Pipeline,
-              SDR Capacity, or Sales Capacity. Each tool runs independently, and
-              the Summary tab brings everything together into a clear, shareable
-              view.
+              Business Development Capacity, or Sales Capacity. Each tool runs
+              independently, and the Summary tab brings everything together into a
+              clear, shareable view.
             </div>
           </div>
           <div className="grid">
@@ -1215,7 +1215,7 @@ export default function PlannerClientPage() {
                   className="button button-secondary"
                   onClick={() => setActiveTab('sdr')}
                 >
-                  Open SDR Capacity
+                  Open Biz Dev Capacity
                 </button>
                 <button
                   type="button"
@@ -1245,8 +1245,8 @@ export default function PlannerClientPage() {
                   from revenue and conversion inputs.
                 </li>
                 <li style={{ marginBottom: 6 }}>
-                  <strong>SDR Capacity</strong>: plan SDR headcount and SQL quotas
-                  to hit an annual SQL target.
+                  <strong>Biz Dev Capacity</strong>: plan BDR or SDR headcount and
+                  Meeting / SQL quotas to hit an annual SQL target.
                 </li>
                 <li>
                   <strong>Sales Capacity</strong>: plan headcount and quotas to
