@@ -1041,7 +1041,7 @@ export default function PlannerClientPage() {
           className={activeTab === 'sdr' ? 'tab active' : 'tab'}
           onClick={() => setActiveTab('sdr')}
         >
-          Biz Dev capacity
+          Biz Dev Capacity
         </button>
         <button
           type="button"
