@@ -17,7 +17,7 @@ export function SiteFooter() {
       </nav>
       <div className="site-footer-logo">
         <Image
-          src="/NinjaLogo.jpg"
+          src="/RevenueNinjaLogo.png"
           alt="Revenue Ninja"
           width={160}
           height={160}
