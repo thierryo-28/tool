@@ -57,10 +57,11 @@ body {
 }
 
 .site-footer {
+  --site-footer-bg: rgb(189, 189, 182);
   flex-shrink: 0;
   width: 100%;
-  background: rgb(38, 124, 168);
-  color: #ffffff;
+  background: var(--site-footer-bg);
+  color: var(--text);
   padding: 22px 20px 26px;
 }
 
@@ -73,7 +74,7 @@ body {
 }
 
 .site-footer-link {
-  color: rgba(255, 255, 255, 0.96);
+  color: var(--text);
   text-decoration: none;
   font-size: 0.9rem;
   font-weight: 500;
@@ -84,7 +85,7 @@ body {
 }
 
 .site-footer-link:focus-visible {
-  outline: 2px solid #ffffff;
+  outline: 2px solid var(--focus);
   outline-offset: 3px;
   border-radius: 4px;
 }
@@ -93,7 +94,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: rgb(38, 124, 168);
+  background: var(--site-footer-bg);
 }
 
 .site-footer-logo-img {
