@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import React from 'react';
 import { ClerkProvider } from '@clerk/nextjs';
+import { SiteFooter } from './components/SiteFooter';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -16,7 +17,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <ClerkProvider>{children}</ClerkProvider>
+        <ClerkProvider>
+          <div className="site-shell">
+            <div className="site-shell-content">{children}</div>
+            <SiteFooter />
+          </div>
+        </ClerkProvider>
       </body>
     </html>
   );
