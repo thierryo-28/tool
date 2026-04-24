@@ -262,12 +262,17 @@ function loadSummaryRecipes(): SummaryRecipeRecord[] {
   }
 }
 
-function persistSummaryRecipes(recipes: SummaryRecipeRecord[]): void {
-  if (typeof window === 'undefined') return;
-  window.localStorage.setItem(
-    SUMMARY_RECIPES_STORAGE_KEY,
-    JSON.stringify(recipes)
-  );
+function persistSummaryRecipes(recipes: SummaryRecipeRecord[]): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    window.localStorage.setItem(
+      SUMMARY_RECIPES_STORAGE_KEY,
+      JSON.stringify(recipes)
+    );
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export default function PlannerClientPage() {
@@ -338,6 +343,7 @@ export default function PlannerClientPage() {
   const [summaryWarnings, setSummaryWarnings] = useState<string[]>([]);
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const [summaryRecipeError, setSummaryRecipeError] = useState<string | null>(null);
+  const [summaryRecipeSuccess, setSummaryRecipeSuccess] = useState<string | null>(null);
   const [summaryModeNotice, setSummaryModeNotice] = useState<string | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryGenerated, setSummaryGenerated] = useState(false);
@@ -548,10 +554,12 @@ export default function PlannerClientPage() {
     setSummaryError(null);
     setSummaryDemandSettings(null);
     setSummaryPipelineSettings(null);
+    setSummaryRecipeSuccess(null);
   }, [summarySelections]);
 
   const handleSaveSummaryRecipe = () => {
     setSummaryRecipeError(null);
+    setSummaryRecipeSuccess(null);
     const trimmed = summaryRecipeName.trim().slice(0, 80);
     if (!trimmed) {
       setSummaryRecipeError('Enter a recipe name.');
@@ -569,6 +577,7 @@ export default function PlannerClientPage() {
     const now = new Date().toISOString();
     const all = loadSummaryRecipes();
     const existing = all.find((r) => r.name.toLowerCase() === trimmed.toLowerCase());
+    const savedId = existing?.id ?? newSummaryRecipeId();
     const next = existing
       ? all.map((r) =>
           r.id === existing.id
@@ -583,15 +592,23 @@ export default function PlannerClientPage() {
       : [
           ...all,
           {
-            id: newSummaryRecipeId(),
+            id: savedId,
             name: trimmed,
             updatedAt: now,
             selections: summarySelections
           }
         ];
-    persistSummaryRecipes(next);
-    refreshSummaryRecipes();
+    const persisted = persistSummaryRecipes(next);
+    if (!persisted) {
+      setSummaryRecipeError(
+        'Could not save recipe in this browser session (storage unavailable).'
+      );
+      return;
+    }
+    setSummaryRecipes(next.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)));
+    setSummaryRecipeLoadId(savedId);
     setSummaryRecipeName('');
+    setSummaryRecipeSuccess(`Recipe "${trimmed}" saved.`);
   };
 
   const handleLoadSummaryRecipe = (id: string) => {
@@ -1819,7 +1836,10 @@ export default function PlannerClientPage() {
                   type="text"
                   maxLength={80}
                   value={summaryRecipeName}
-                  onChange={(e) => setSummaryRecipeName(e.target.value)}
+                  onChange={(e) => {
+                    setSummaryRecipeName(e.target.value);
+                    setSummaryRecipeSuccess(null);
+                  }}
                   placeholder="e.g. Q3 board package"
                 />
               </div>
@@ -1831,6 +1851,7 @@ export default function PlannerClientPage() {
                   onChange={(e) => {
                     const v = e.target.value;
                     setSummaryRecipeLoadId(v);
+                    setSummaryRecipeSuccess(null);
                     handleLoadSummaryRecipe(v);
                   }}
                 >
@@ -1896,6 +1917,11 @@ export default function PlannerClientPage() {
             {summaryRecipeError ? (
               <div className="saved-views-error" style={{ marginTop: 8 }}>
                 {summaryRecipeError}
+              </div>
+            ) : null}
+            {summaryRecipeSuccess ? (
+              <div className="saved-views-info" style={{ marginTop: 8 }}>
+                {summaryRecipeSuccess}
               </div>
             ) : null}
           </section>
