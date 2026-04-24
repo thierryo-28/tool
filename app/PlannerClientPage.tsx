@@ -356,6 +356,8 @@ export default function PlannerClientPage() {
   );
   const [summaryDemandSettings, setSummaryDemandSettings] =
     useState<DemandSettings | null>(null);
+  const [summaryPipelineSettings, setSummaryPipelineSettings] =
+    useState<PipelineSettings | null>(null);
   const [summaryPipelineOutput, setSummaryPipelineOutput] =
     useState<PipelineOutput | null>(null);
   const [summarySdrOutput, setSummarySdrOutput] = useState<SdrCapacityOutput | null>(
@@ -545,6 +547,7 @@ export default function PlannerClientPage() {
     setSummaryWarnings([]);
     setSummaryError(null);
     setSummaryDemandSettings(null);
+    setSummaryPipelineSettings(null);
   }, [summarySelections]);
 
   const handleSaveSummaryRecipe = () => {
@@ -698,6 +701,7 @@ export default function PlannerClientPage() {
       capacity: selectedCapacity
     });
     setSummaryDemandSettings(demandPayload.demandSettings);
+    setSummaryPipelineSettings(pipelinePayload.pipelineSettings);
     setSummaryDemandOutput(nextDemand);
     setSummaryPipelineOutput(nextPipeline);
     setSummarySdrOutput(nextSdr);
@@ -2038,6 +2042,34 @@ export default function PlannerClientPage() {
                 </div>
                 {summaryPipelineOutput ? (
                   <>
+                    {summaryPipelineSettings ? (
+                      <div className="summary-row">
+                        <div className="summary-card">
+                          <div className="summary-label">Yearly target existing</div>
+                          <div className="summary-value">
+                            {formatCurrency(summaryPipelineSettings.yearlyRevenueTargetExisting)}
+                          </div>
+                        </div>
+                        <div className="summary-card">
+                          <div className="summary-label">Yearly target new</div>
+                          <div className="summary-value">
+                            {formatCurrency(summaryPipelineSettings.yearlyRevenueTargetNew)}
+                          </div>
+                        </div>
+                        <div className="summary-card">
+                          <div className="summary-label">Average deal size existing</div>
+                          <div className="summary-value">
+                            {formatCurrency(summaryPipelineSettings.averageDealSizeExisting)}
+                          </div>
+                        </div>
+                        <div className="summary-card">
+                          <div className="summary-label">Average deal size new</div>
+                          <div className="summary-value">
+                            {formatCurrency(summaryPipelineSettings.averageDealSizeNew)}
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
                     <div className="summary-row">
                       <div className="summary-card">
                         <div className="summary-label">Won target / year</div>
