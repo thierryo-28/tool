@@ -1055,7 +1055,7 @@ export default function PlannerClientPage() {
           className={activeTab === 'summary' ? 'tab active' : 'tab'}
           onClick={() => setActiveTab('summary')}
         >
-          Summary
+          Generate Report
         </button>
         {isWorkspaceAdmin ? (
           <button
