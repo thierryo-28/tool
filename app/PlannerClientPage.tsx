@@ -354,6 +354,8 @@ export default function PlannerClientPage() {
   const [summaryDemandOutput, setSummaryDemandOutput] = useState<DemandOutput | null>(
     null
   );
+  const [summaryDemandSettings, setSummaryDemandSettings] =
+    useState<DemandSettings | null>(null);
   const [summaryPipelineOutput, setSummaryPipelineOutput] =
     useState<PipelineOutput | null>(null);
   const [summarySdrOutput, setSummarySdrOutput] = useState<SdrCapacityOutput | null>(
@@ -542,6 +544,7 @@ export default function PlannerClientPage() {
     setSummaryGenerated(false);
     setSummaryWarnings([]);
     setSummaryError(null);
+    setSummaryDemandSettings(null);
   }, [summarySelections]);
 
   const handleSaveSummaryRecipe = () => {
@@ -694,6 +697,7 @@ export default function PlannerClientPage() {
       sdr: selectedSdr,
       capacity: selectedCapacity
     });
+    setSummaryDemandSettings(demandPayload.demandSettings);
     setSummaryDemandOutput(nextDemand);
     setSummaryPipelineOutput(nextPipeline);
     setSummarySdrOutput(nextSdr);
@@ -1933,6 +1937,28 @@ export default function PlannerClientPage() {
                 </div>
                 {summaryDemandOutput ? (
                   <>
+                    {summaryDemandSettings ? (
+                      <div className="summary-row">
+                        <div className="summary-card">
+                          <div className="summary-label">Yearly revenue target</div>
+                          <div className="summary-value">
+                            {formatCurrency(summaryDemandSettings.yearlyRevenueTarget)}
+                          </div>
+                        </div>
+                        <div className="summary-card">
+                          <div className="summary-label">Target CPL (CPA)</div>
+                          <div className="summary-value">
+                            {formatCurrency(summaryDemandSettings.targetCpl)}
+                          </div>
+                        </div>
+                        <div className="summary-card">
+                          <div className="summary-label">Yearly paid media budget</div>
+                          <div className="summary-value">
+                            {formatCurrency(summaryDemandSettings.yearlyPaidMediaBudget)}
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
                     <div className="summary-row">
                       <div className="summary-card">
                         <div className="summary-label">Inbound MQLs / year</div>
