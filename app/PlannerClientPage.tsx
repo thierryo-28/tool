@@ -2,11 +2,8 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@clerk/nextjs';
-import { useRouter, useSearchParams } from 'next/navigation';
-import {
-  compressToEncodedURIComponent,
-  decompressFromEncodedURIComponent
-} from 'lz-string';
+import { useSearchParams } from 'next/navigation';
+import { decompressFromEncodedURIComponent } from 'lz-string';
 import {
   CapacityOutput,
   GlobalSettings,
@@ -274,7 +271,6 @@ function persistSummaryRecipes(recipes: SummaryRecipeRecord[]): void {
 }
 
 export default function PlannerClientPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { isLoaded, userId } = useAuth();
 
@@ -293,7 +289,6 @@ export default function PlannerClientPage() {
     AM: true
   });
   const [showResults, setShowResults] = useState(false);
-  const [linkCopied, setLinkCopied] = useState(false);
   const [hydratedFromUrl, setHydratedFromUrl] = useState(false);
 
   type TabId =
@@ -368,6 +363,10 @@ export default function PlannerClientPage() {
     useState<CapacityOutput | null>(null);
 
   const isWorkspaceAdmin = workspaceAccessRole === 'admin';
+
+  const refreshSummaryRecipes = () => {
+    setSummaryRecipes(loadSummaryRecipes());
+  };
 
   useEffect(() => {
     if (!isLoaded || !userId) {
@@ -507,7 +506,36 @@ export default function PlannerClientPage() {
   useEffect(() => {
     if (activeTab !== 'summary') return;
     void refreshSummaryViews();
-    setSummaryRecipes(loadSummaryRecipes());
+    refreshSummaryRecipes();
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (activeTab !== 'summary') return;
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === SUMMARY_RECIPES_STORAGE_KEY) {
+        refreshSummaryRecipes();
+      }
+    };
+    const handleWindowFocus = () => {
+      refreshSummaryRecipes();
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshSummaryRecipes();
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('focus', handleWindowFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('focus', handleWindowFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [activeTab]);
 
   useEffect(() => {
@@ -556,7 +584,7 @@ export default function PlannerClientPage() {
           }
         ];
     persistSummaryRecipes(next);
-    setSummaryRecipes(loadSummaryRecipes());
+    refreshSummaryRecipes();
     setSummaryRecipeName('');
   };
 
@@ -864,41 +892,6 @@ export default function PlannerClientPage() {
     }
   }, [hydratedFromUrl, searchParams]);
 
-  const saveViewToUrl = () => {
-    const payload = {
-      settings,
-      roles,
-      waves,
-      baseline,
-      selectedRoles,
-      showResults,
-      activeTab,
-      demandSettings,
-      pipelineSettings,
-      sdrSettings,
-      sdrRoles,
-      sdrWaves,
-      sdrBaselines,
-      sdrPipeline,
-      sdrShowResults
-    };
-    const encoded = compressToEncodedURIComponent(JSON.stringify(payload));
-    router.replace(`?view=${encoded}`);
-  };
-
-  const copyLink = async () => {
-    saveViewToUrl();
-    setTimeout(async () => {
-      try {
-        await navigator.clipboard.writeText(window.location.href);
-        setLinkCopied(true);
-        setTimeout(() => setLinkCopied(false), 1500);
-      } catch {
-        // ignore
-      }
-    }, 50);
-  };
-
   const downloadPdf = () => {
     window.print();
   };
@@ -1002,10 +995,7 @@ export default function PlannerClientPage() {
     <main>
       <Header
         rightText="Revenue Planning Tools"
-        onSaveToUrl={saveViewToUrl}
-        onCopyLink={copyLink}
         onDownloadPdf={downloadPdf}
-        linkCopied={linkCopied}
       />
       <div className="tabs no-print">
         <button
@@ -1852,6 +1842,13 @@ export default function PlannerClientPage() {
                 onClick={() => void refreshSummaryViews()}
               >
                 Refresh views
+              </button>
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={refreshSummaryRecipes}
+              >
+                Refresh recipes
               </button>
               <button
                 type="button"

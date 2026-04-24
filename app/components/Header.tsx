@@ -11,18 +11,12 @@ import {
 
 interface Props {
   rightText?: string;
-  onSaveToUrl?: () => void;
-  onCopyLink?: () => void;
   onDownloadPdf?: () => void;
-  linkCopied?: boolean;
 }
 
 export const Header: React.FC<Props> = ({
   rightText,
-  onSaveToUrl,
-  onCopyLink,
-  onDownloadPdf,
-  linkCopied
+  onDownloadPdf
 }) => {
   return (
     <header className="app-header">
@@ -67,22 +61,6 @@ export const Header: React.FC<Props> = ({
         <div className="app-header-kicker">Planner</div>
         <div className="app-header-title">{rightText ?? 'Sales Capacity'}</div>
         <div className="app-header-actions no-print">
-          <button
-            type="button"
-            className="button button-secondary button-small"
-            onClick={onSaveToUrl}
-            disabled={!onSaveToUrl}
-          >
-            Save to URL
-          </button>
-          <button
-            type="button"
-            className="button button-secondary button-small"
-            onClick={onCopyLink}
-            disabled={!onCopyLink}
-          >
-            {linkCopied ? 'Link copied' : 'Copy link'}
-          </button>
           <button
             type="button"
             className="button button-small"
