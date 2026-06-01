@@ -1,13 +1,14 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import React from 'react';
 
 export function SiteFooter() {
   return (
     <footer className="site-footer">
       <nav className="site-footer-nav" aria-label="Site footer">
-        <a href="#" className="site-footer-link">
+        <Link href="/about" className="site-footer-link">
           About us
-        </a>
+        </Link>
         <a href="#" className="site-footer-link">
           Help Center
         </a>
