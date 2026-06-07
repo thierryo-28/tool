@@ -1146,26 +1146,27 @@ export default function PlannerClientPage() {
         <div className="subtitle">
           <h2 style={{ margin: '0 0 12px', fontSize: '1.25rem' }}>Sales Capacity Planner</h2>
           <div style={{ marginBottom: 10 }}>
-            The tool helps you forecast how many salespeople and resources you
-            need to hit your revenue targets by modeling headcount,
-            productivity, and quotas.
+            This tool enables you to forecast the sales capacity required to
+            achieve your revenue targets by modeling headcount, productivity,
+            and quota allocation.
           </div>
           <div style={{ fontWeight: 600, marginBottom: 6 }}>Definitions:</div>
           <ul style={{ margin: 0, paddingLeft: 18 }}>
             <li style={{ marginBottom: 6 }}>
-              <strong>Attrition</strong>: enter average yearly attrition
-              (percentage of team headcount you risk losing).
+              <strong>Attrition</strong>: The average annual percentage of sales
+              team members expected to leave.
             </li>
             <li style={{ marginBottom: 6 }}>
-              <strong>Over-assignment</strong>: difference between your budget
-              and the quotas you distribute.
+              <strong>Over-assignment</strong>: The cushion between your revenue
+              target and the total quota assigned to the team.
             </li>
             <li style={{ marginBottom: 6 }}>
-              <strong>Ramp time</strong>: number of months needed to be fully
-              ramped and productive.
+              <strong>Ramp time</strong>: The number of months required for a
+              new hire to reach full productivity.
             </li>
             <li>
-              <strong>Ramp by month</strong>: productivity expected in % of full
+              <strong>Ramp by month</strong>: The expected productivity level
+              for each month during ramp-up, expressed as a percentage of full
               quota.
             </li>
           </ul>
@@ -1175,22 +1176,32 @@ export default function PlannerClientPage() {
       {activeTab === 'home' ? (
         <>
           <div className="subtitle">
-            <div style={{ margin: '0 0 10px', lineHeight: 1.45 }}>
-              Revenue Ninja is your command center for smarter revenue planning.
-              From headcount and sales capacity to pipeline coverage and demand
-              generation, it gives sales leaders and RevOps teams the clarity to
-              plan faster, allocate resources confidently, and hit targets with
-              precision—no spreadsheets, no guesswork, just execution.
-            </div>
-            <h2 style={{ margin: 0, fontSize: '1.25rem' }}>
-              Revenue Planning Tools
+            <h2 style={{ margin: '0 0 10px', fontSize: '1.25rem' }}>
+              Nerd-level revenue planning without spreadsheet chaos.
             </h2>
+            <div style={{ margin: '0 0 10px', lineHeight: 1.45 }}>
+              Welcome, Sales and Revenue leaders, RevOps pros, and Demand Gen
+              managers—you&apos;re in the right place if you live in headcount
+              models, capacity plans, and pipeline coverage math. Start in
+              Configure to set up your roles and headcount so the tools mirror
+              how your org is actually structured.
+            </div>
+            <div style={{ margin: '0 0 10px', lineHeight: 1.45 }}>
+              Once that&apos;s in place, Revenue Ninja becomes your command
+              center for smarter revenue planning. From headcount and sales
+              capacity to pipeline coverage and demand generation, it gives you
+              the clarity to plan faster, allocate resources confidently, and hit
+              targets with precision—no spreadsheets, no guesswork, just
+              execution.
+            </div>
             <div style={{ marginTop: 8, lineHeight: 1.45 }}>
-              Under Configure, create the roles per the setup of your
-              organization. Then, pick a planner —Demand Generation, Pipeline,
-              Business Development Capacity, or Sales Capacity. Each tool runs
-              independently, and the Summary tab brings everything together into a
-              clear, shareable view.
+              After Configure, pick a planner:{' '}
+              <strong>Demand Generation</strong>, <strong>Pipeline</strong>,{' '}
+              <strong>Business Development Capacity</strong>, or{' '}
+              <strong>Sales Capacity</strong>. Each tool runs independently, and
+              the <strong>Summary</strong> tab pulls everything into a clear,
+              shareable view you can use with leadership, finance, and field
+              teams.
             </div>
           </div>
           <div className="grid">
