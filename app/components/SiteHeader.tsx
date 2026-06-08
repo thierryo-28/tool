@@ -16,10 +16,10 @@ export function SiteHeader() {
       <div className="site-header-inner">
         <Link href="/" className="site-header-logo" aria-label="Revenue Ninja home">
           <Image
-            src="/RevenueNinjaLogo.png"
+            src="/NinjaLogo.jpg"
             alt="Revenue Ninja"
-            width={160}
-            height={48}
+            width={230}
+            height={230}
             className="site-header-logo-img"
             priority
           />
