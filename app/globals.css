@@ -56,6 +56,59 @@ body {
   width: 100%;
 }
 
+.site-header {
+  flex-shrink: 0;
+  width: 100%;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.site-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 14px 22px;
+}
+
+.site-header-logo {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.site-header-logo-img {
+  width: auto;
+  height: 44px;
+  max-width: min(180px, 52vw);
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+
+.site-header-auth {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.planner-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.planner-toolbar-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
 .site-footer {
   --site-footer-bg: rgb(189, 189, 182);
   flex-shrink: 0;
