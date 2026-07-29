@@ -1,23 +1,10 @@
 import type { TabViewPayload } from './plannerViewPayloads';
 import type { SavedPlannerTab, SavedViewRecord } from './savedViews';
 
-function getDefaultWorkspaceId(): string | null {
-  return process.env.NEXT_PUBLIC_DEFAULT_WORKSPACE_ID ?? null;
-}
-
-export function isRemoteViewsEnabled(): boolean {
-  return (
-    process.env.NEXT_PUBLIC_ENABLE_REMOTE_VIEWS === 'true' &&
-    !!getDefaultWorkspaceId()
-  );
-}
-
 export async function listRemoteViewsForTab(
+  workspaceId: string,
   tab: SavedPlannerTab
 ): Promise<SavedViewRecord[]> {
-  const workspaceId = getDefaultWorkspaceId();
-  if (!workspaceId) throw new Error('Missing NEXT_PUBLIC_DEFAULT_WORKSPACE_ID');
-
   const res = await fetch(
     `/api/views?workspaceId=${encodeURIComponent(workspaceId)}&tab=${encodeURIComponent(tab)}`,
     {
@@ -34,13 +21,11 @@ export async function listRemoteViewsForTab(
 }
 
 export async function saveRemoteNamedView(
+  workspaceId: string,
   tab: SavedPlannerTab,
   name: string,
   payload: TabViewPayload
 ): Promise<SavedViewRecord> {
-  const workspaceId = getDefaultWorkspaceId();
-  if (!workspaceId) throw new Error('Missing NEXT_PUBLIC_DEFAULT_WORKSPACE_ID');
-
   const res = await fetch('/api/views', {
     method: 'POST',
     credentials: 'include',
@@ -61,9 +46,9 @@ export async function saveRemoteNamedView(
   };
   if (!res.ok || !json.view) {
     const detailSuffix =
-      json.details !== undefined
-        ? ` ${typeof json.details === 'string' ? json.details : JSON.stringify(json.details)}`
-        : '';
+      json.details !== undefined ?
+        ` ${typeof json.details === 'string' ? json.details : JSON.stringify(json.details)}`
+      : '';
     throw new Error((json.error ?? 'Could not save shared view.') + detailSuffix);
   }
   return json.view;

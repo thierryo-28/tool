@@ -10,22 +10,28 @@ import {
 } from '@/lib/savedViews';
 import {
   deleteRemoteSavedView,
-  isRemoteViewsEnabled,
   listRemoteViewsForTab,
   saveRemoteNamedView
 } from '@/lib/remoteSavedViews';
+import { canUseRemoteViews } from '@/lib/workspaceClient';
 
 interface Props {
   tab: SavedPlannerTab;
+  workspaceId: string | null;
+  workspaceReady?: boolean;
   getPayload: () => TabViewPayload;
   onApply: (payload: TabViewPayload) => void;
 }
 
 export const SavedViewsToolbar: React.FC<Props> = ({
   tab,
+  workspaceId,
+  workspaceReady = true,
   getPayload,
   onApply
 }) => {
+  const remoteEnabled = canUseRemoteViews(workspaceId);
+
   const [views, setViews] = useState<SavedViewRecord[]>(() =>
     listViewsForTab(tab)
   );
@@ -38,14 +44,24 @@ export const SavedViewsToolbar: React.FC<Props> = ({
   const [remoteUnavailable, setRemoteUnavailable] = useState(false);
 
   const refresh = useCallback(async () => {
-    if (!isRemoteViewsEnabled()) {
+    if (!remoteEnabled) {
       setViews(listViewsForTab(tab));
       setModeNotice(null);
       setRemoteUnavailable(false);
       return;
     }
+    if (!workspaceId) {
+      setViews(listViewsForTab(tab));
+      setModeNotice(
+        workspaceReady ?
+          'Using local saved views (no workspace access).'
+        : null
+      );
+      setRemoteUnavailable(false);
+      return;
+    }
     try {
-      const remote = await listRemoteViewsForTab(tab);
+      const remote = await listRemoteViewsForTab(workspaceId, tab);
       setViews(remote);
       setModeNotice(null);
       setRemoteUnavailable(false);
@@ -54,7 +70,7 @@ export const SavedViewsToolbar: React.FC<Props> = ({
       setModeNotice('Using local saved views (remote unavailable).');
       setRemoteUnavailable(true);
     }
-  }, [tab]);
+  }, [remoteEnabled, workspaceId, workspaceReady, tab]);
 
   useEffect(() => {
     refresh();
@@ -74,8 +90,7 @@ export const SavedViewsToolbar: React.FC<Props> = ({
     setSaveError(null);
     try {
       const payload = getPayload();
-      if (isRemoteViewsEnabled()) {
-        // If remote listing is already unavailable, stay fully local for consistency.
+      if (remoteEnabled && workspaceId) {
         if (remoteUnavailable) {
           saveNamedView(tab, saveName, payload);
           setModeNotice('Saved locally (remote unavailable).');
@@ -84,7 +99,7 @@ export const SavedViewsToolbar: React.FC<Props> = ({
           let lastErr: unknown = null;
           for (let attempt = 0; attempt < 2; attempt += 1) {
             try {
-              await saveRemoteNamedView(tab, saveName, payload);
+              await saveRemoteNamedView(workspaceId, tab, saveName, payload);
               saved = true;
               break;
             } catch (e) {
@@ -107,9 +122,9 @@ export const SavedViewsToolbar: React.FC<Props> = ({
       await refresh();
     } catch (e) {
       setSaveError(
-        e instanceof Error
-          ? e.message
-          : 'Could not save shared view right now. Please retry.'
+        e instanceof Error ?
+          e.message
+        : 'Could not save shared view right now. Please retry.'
       );
     }
   };
@@ -127,7 +142,7 @@ export const SavedViewsToolbar: React.FC<Props> = ({
       setDeleteKey('');
       return;
     }
-    if (isRemoteViewsEnabled()) {
+    if (remoteEnabled && workspaceId) {
       try {
         await deleteRemoteSavedView(id);
         setModeNotice(null);

@@ -16,3 +16,7 @@ export const updateMemberRoleSchema = z.object({
   profileId: z.string().uuid(),
   role: workspaceRoleSchema
 });
+
+export const setActiveWorkspaceSchema = z.object({
+  activeWorkspaceId: z.string().uuid()
+});

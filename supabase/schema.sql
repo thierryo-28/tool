@@ -104,4 +104,14 @@ create table if not exists profile_planner_settings (
 create index if not exists profile_planner_settings_updated_idx
   on profile_planner_settings (updated_at desc);
 
+-- Per-profile UI preferences (active workspace for phase C multi-tenant).
+create table if not exists profile_preferences (
+  profile_id uuid primary key references profiles(id) on delete cascade,
+  active_workspace_id uuid references workspaces(id) on delete set null,
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists profile_preferences_active_workspace_idx
+  on profile_preferences (active_workspace_id);
+
 

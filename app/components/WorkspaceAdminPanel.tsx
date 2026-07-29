@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useCallback, useMemo, useState } from 'react';
-
-type Role = 'admin' | 'user' | 'viewer';
+import React, { useCallback, useEffect, useState } from 'react';
+import type { WorkspaceRole } from '@/lib/workspaceTypes';
 
 interface WorkspaceMember {
   workspaceId: string;
   profileId: string;
-  role: Role;
+  role: WorkspaceRole;
   clerkUserId: string;
   email: string | null;
   fullName: string | null;
@@ -17,24 +16,25 @@ interface WorkspaceInvite {
   id: string;
   workspaceId: string;
   email: string;
-  role: Role;
+  role: WorkspaceRole;
   status: string;
   createdAt: string;
 }
 
-const roleOptions: Role[] = ['admin', 'user', 'viewer'];
+const roleOptions: WorkspaceRole[] = ['admin', 'user', 'viewer'];
 
-export const WorkspaceAdminPanel: React.FC = () => {
-  const workspaceId = process.env.NEXT_PUBLIC_DEFAULT_WORKSPACE_ID ?? '';
+interface Props {
+  workspaceId: string;
+}
+
+export const WorkspaceAdminPanel: React.FC<Props> = ({ workspaceId }) => {
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [invites, setInvites] = useState<WorkspaceInvite[]>([]);
   const [inviteEmail, setInviteEmail] = useState('');
-  const [newRole, setNewRole] = useState<Role>('viewer');
+  const [newRole, setNewRole] = useState<WorkspaceRole>('viewer');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-
-  const canUse = useMemo(() => !!workspaceId, [workspaceId]);
 
   const loadMembers = useCallback(async () => {
     if (!workspaceId) return;
@@ -107,7 +107,7 @@ export const WorkspaceAdminPanel: React.FC = () => {
     }
   };
 
-  const updateRole = async (profileId: string, role: Role) => {
+  const updateRole = async (profileId: string, role: WorkspaceRole) => {
     if (!workspaceId) return;
     setLoading(true);
     setError(null);
@@ -134,21 +134,6 @@ export const WorkspaceAdminPanel: React.FC = () => {
       setLoading(false);
     }
   };
-
-  if (!canUse) {
-    return (
-      <section className="panel">
-        <div className="panel-header">
-          <div>
-            <div className="panel-title">Workspace members</div>
-            <div className="panel-subtitle">
-              Set `NEXT_PUBLIC_DEFAULT_WORKSPACE_ID` to use this panel.
-            </div>
-          </div>
-        </div>
-      </section>
-    );
-  }
 
   return (
     <section className="panel">
@@ -183,7 +168,7 @@ export const WorkspaceAdminPanel: React.FC = () => {
           <select
             id="member-role"
             value={newRole}
-            onChange={(e) => setNewRole(e.target.value as Role)}
+            onChange={(e) => setNewRole(e.target.value as WorkspaceRole)}
           >
             {roleOptions.map((r) => (
               <option key={r} value={r}>
@@ -227,7 +212,7 @@ export const WorkspaceAdminPanel: React.FC = () => {
                     <select
                       value={m.role}
                       onChange={(e) =>
-                        updateRole(m.profileId, e.target.value as Role)
+                        updateRole(m.profileId, e.target.value as WorkspaceRole)
                       }
                     >
                       {roleOptions.map((r) => (
